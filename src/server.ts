@@ -1,10 +1,15 @@
+// src/server.ts (Backend - Real-Time Messaging)
+
 import { createServer, Server as HttpServer } from "http";
 import mongoose from "mongoose";
 import app from "./app"; // Express app
 import seedSuperAdmin from "./DB"; // Seeding function
 import config from "./config";
+import { Server as SocketIOServer } from "socket.io";
+import { WebRTCUtils } from "./utils/webRtc";
 
 let server: HttpServer;
+let io: SocketIOServer;
 
 async function main() {
   try {
@@ -29,11 +34,56 @@ async function main() {
     // Stop the connecting animation
     clearInterval(loader);
     console.log(
-      `\r✅ Mongodb connected successfully in ${Date.now() - dbStartTime}ms`
+      `\r✅ MongoDB connected successfully in ${Date.now() - dbStartTime}ms`
     );
 
     // Start HTTP server
     server = createServer(app);
+
+    // Initialize Socket.IO on top of your HTTP server
+    io = new SocketIOServer(server, {
+      cors: {
+        origin: "*", // allow all origins for testing; lock down in production
+        methods: ["GET", "POST"],
+      },
+    });
+
+    // Setup WebRTC signaling
+    io.on("connection", (socket) => {
+      console.log(`User connected: ${socket.id}`);
+
+      // Create a new WebRTC utility instance for this socket
+      const webrtcUtils = new WebRTCUtils(socket);
+
+      // WebRTC signaling events
+      socket.on("offer", (offer) => {
+        console.log("Received offer from:", socket.id);
+        webrtcUtils.handleOffer(offer);
+      });
+
+      socket.on("answer", (answer) => {
+        console.log("Received answer from:", socket.id);
+        webrtcUtils.handleAnswer(answer);
+      });
+
+      socket.on("ice-candidate", (candidate) => {
+        console.log("Received ICE candidate from:", socket.id);
+        webrtcUtils.handleIceCandidate(candidate);
+      });
+
+      // Handle incoming messages
+      socket.on("message", (message) => {
+        console.log("Message received from:", socket.id, message);
+
+        // Broadcast message to all other connected users
+        socket.broadcast.emit("message", message);
+      });
+
+      socket.on("disconnect", () => {
+        console.log(`User disconnected: ${socket.id}`);
+      });
+    });
+
     // Start the server and log the time taken
     const serverStartTime = Date.now();
     server.listen(config.PORT, () => {
@@ -41,8 +91,6 @@ async function main() {
         `🚀 Server is running on port ${config.PORT} and took ${Date.now() - serverStartTime}ms to start`
       );
     });
-
-    // Initialize Socket.IO
 
     // Start seeding in parallel after the server has started
     await Promise.all([seedSuperAdmin()]);
@@ -60,10 +108,10 @@ main().catch((error) => {
 // Gracefully handle unhandled rejections and uncaught exceptions
 process.on("unhandledRejection", (err) => {
   console.error(" ☠️ Unhandled promise rejection detected:", err);
-  server.close(() => process.exit(1));
+  server?.close(() => process.exit(1));
 });
 
 process.on("uncaughtException", (error) => {
   console.error("☠️ Uncaught exception detected:", error);
-  server.close(() => process.exit(1));
+  server?.close(() => process.exit(1));
 });
