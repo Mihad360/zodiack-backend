@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import HttpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
@@ -28,7 +29,23 @@ const joinTrip = catchAsync(async (req, res) => {
   });
 });
 
+const requestPermissionSlip = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const result = await joinedParticipantsServices.requestPermissionSlip(
+    id,
+    req.body
+  );
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "joinTrip successfully",
+    data: result,
+  });
+});
+
 export const joinedParticipantsControllers = {
   createTripParticipants,
   joinTrip,
+  requestPermissionSlip,
 };

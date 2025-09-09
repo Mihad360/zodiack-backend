@@ -7,6 +7,8 @@ import seedSuperAdmin from "./DB"; // Seeding function
 import config from "./config";
 import { Server as SocketIOServer } from "socket.io";
 import { WebRTCUtils } from "./utils/webRtc";
+import { NotificationModel } from "./modules/Notification/notification.model";
+import cron from "node-cron";
 
 let server: HttpServer;
 let io: SocketIOServer;
@@ -90,6 +92,26 @@ async function main() {
       console.log(
         `🚀 Server is running on port ${config.PORT} and took ${Date.now() - serverStartTime}ms to start`
       );
+    });
+
+    cron.schedule("* * * * *", async () => {
+      try {
+        // Fetch unread notifications for admin
+        const unreadNotifications = await NotificationModel.find({
+          status: "unread",
+        });
+
+        if (unreadNotifications.length > 0) {
+          console.log(
+            `You have ${unreadNotifications.length} unread notifications.`
+          );
+
+          // Optionally, send reminders (like email/SMS/alerts) to admin
+          // sendNotificationToAdmin(unreadNotifications);
+        }
+      } catch (error) {
+        console.error("Error checking unread notifications:", error);
+      }
     });
 
     // Start seeding in parallel after the server has started

@@ -5,6 +5,7 @@ import { TripRoutes } from "../modules/Trip/trip.route";
 import { JoinParticipantsRoutes } from "../modules/JoinedParticipants/joinedparticipants.route";
 import { SettingRoutes } from "../modules/settings/settings.route";
 import { TeacherRoutes } from "../modules/Teacher/teacher.route";
+import { NotificationRoutes } from "../modules/Notification/notification.route";
 
 export const routesConfig = [
   { path: "/users", handler: UserRoutes },
@@ -13,5 +14,6 @@ export const routesConfig = [
   { path: "/participants", handler: JoinParticipantsRoutes },
   { path: "/settings", handler: SettingRoutes },
   { path: "/teachers", handler: TeacherRoutes },
+  { path: "/notifications", handler: NotificationRoutes },
   { path: "/admin", handler: AdminRoutes },
 ];
