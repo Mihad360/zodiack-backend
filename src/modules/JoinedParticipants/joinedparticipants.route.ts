@@ -10,6 +10,11 @@ router.post(
 );
 router.post("/join-trip/:id", joinedParticipantsControllers.joinTrip);
 router.post(
+  "/join-trip-with-code",
+  auth("participant"),
+  joinedParticipantsControllers.joinTripByOnlyCode
+);
+router.post(
   "/:id/request-slip",
   auth("teacher"),
   joinedParticipantsControllers.requestPermissionSlip

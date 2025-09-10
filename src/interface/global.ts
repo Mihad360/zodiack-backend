@@ -9,10 +9,18 @@ export interface JwtPayload {
   isDeleted?: boolean;
 }
 
+export interface StudentJwtPayload {
+  studentId: Types.ObjectId | string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
 export const USER_ROLE = {
   admin: "admin",
   student: "student",
   teacher: "teacher",
+  participant: "participant",
 } as const;
 
 export type TUserRole = keyof typeof USER_ROLE;

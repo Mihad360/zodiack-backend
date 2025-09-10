@@ -126,10 +126,17 @@ const deleteUser = async (id: string) => {
   return result;
 };
 
+const getAllMessageForUser = async () => {};
+const getAllNotificationForUser = async () => {};
+const getAllConversationForUser = async () => {};
+
 export const userServices = {
   registerUser,
   getMe,
   editUserProfile,
   deleteUser,
   getUsers,
+  getAllMessageForUser,
+  getAllNotificationForUser,
+  getAllConversationForUser,
 };

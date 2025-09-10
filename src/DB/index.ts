@@ -5,6 +5,7 @@ const admin = {
   email: "admin@gmail.com",
   password: "123456",
   role: "admin",
+  isVerified: true,
   isDeleted: false,
 };
 

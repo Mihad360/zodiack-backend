@@ -3,7 +3,7 @@ import HttpStatus from "http-status";
 import { NextFunction, Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
 import config from "../config";
-import { TUserRole } from "../interface/global";
+import { StudentJwtPayload, TUserRole } from "../interface/global";
 import { JwtPayload } from "../interface/global";
 import AppError from "../errors/AppError";
 import { UserModel } from "../modules/user/user.model";
@@ -22,6 +22,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
     if (!token) {
       throw new AppError(HttpStatus.UNAUTHORIZED, "You are not authorized");
     }
+
     // verify token -----
     let decoded;
     try {
@@ -36,6 +37,13 @@ const auth = (...requiredRoles: TUserRole[]) => {
 
     const { role, email, iat } = decoded;
 
+    // Skip all checks if role is 'student'
+    if (role === "participant") {
+      req.user = decoded as StudentJwtPayload;
+      return next();
+    }
+
+    // Proceed with other checks for non-student roles
     const user = await UserModel.isUserExistByEmail(email);
     if (!user) {
       throw new AppError(HttpStatus.NOT_FOUND, "This User is not exist");

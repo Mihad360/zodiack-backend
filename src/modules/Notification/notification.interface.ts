@@ -1,10 +1,13 @@
-import { Types } from "mongoose";
+import { ObjectId } from "mongoose";
 
 export interface INotification {
-  userId: Types.ObjectId; // Reference to the user receiving the notification
-  userMsgTittle: string; // The message title for the user
-  userMsg?: string; // The message for the user
-  adminMsgTittle: string; // The message title for the admins
-  adminMsg?: string; // The message for the admins
-  adminId: Types.ObjectId[]; // Array of admin IDs to whom the notification is sent
+  user_id: ObjectId;
+  notification_for: "admin" | "user";
+  target: "conversation" | "trip" | "call";
+  target_id: ObjectId;
+  title: string;
+  content: string;
+  is_read: boolean;
+  is_important: boolean;
+  isDeleted: boolean;
 }

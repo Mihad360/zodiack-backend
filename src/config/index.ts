@@ -4,6 +4,7 @@ dotenv.config({ path: path.join((process.cwd(), ".env")) });
 
 export default {
   PORT: 5000,
+  local_url: process.env.LOCAL_URL,
   DATABASE_URL: process.env.DATABASE_URL,
   JWT_SECRET_KEY: process.env.JWT_SECRET_KEY,
   JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN,

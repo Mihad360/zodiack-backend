@@ -28,6 +28,10 @@ const tripSchema = new Schema<ITrip>(
       type: String,
       required: true,
     },
+    leaving_place: {
+      type: String,
+      required: true,
+    },
     status: {
       type: String,
       enum: ["planned", "ongoing", "completed", "cancelled"],

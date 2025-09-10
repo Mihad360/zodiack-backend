@@ -6,6 +6,10 @@ import { JoinParticipantsRoutes } from "../modules/JoinedParticipants/joinedpart
 import { SettingRoutes } from "../modules/settings/settings.route";
 import { TeacherRoutes } from "../modules/Teacher/teacher.route";
 import { NotificationRoutes } from "../modules/Notification/notification.route";
+import { ConversationRoutes } from "../modules/GroupConversion/conversation.route";
+import { MessageRoutes } from "../modules/Message/message.route";
+import { AttachmentRoutes } from "../modules/Attachments/attachment.route";
+import { CallRoutes } from "../modules/Calls/calls.route";
 
 export const routesConfig = [
   { path: "/users", handler: UserRoutes },
@@ -16,4 +20,8 @@ export const routesConfig = [
   { path: "/teachers", handler: TeacherRoutes },
   { path: "/notifications", handler: NotificationRoutes },
   { path: "/admin", handler: AdminRoutes },
+  { path: "/conversations", handler: ConversationRoutes },
+  { path: "/messages", handler: MessageRoutes },
+  { path: "/attachments", handler: AttachmentRoutes },
+  { path: "/calls", handler: CallRoutes },
 ];

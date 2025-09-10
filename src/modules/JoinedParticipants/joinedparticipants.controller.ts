@@ -3,6 +3,7 @@ import HttpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { joinedParticipantsServices } from "./joinedparticipants.service";
+import { StudentJwtPayload } from "../../interface/global";
 
 const createTripParticipants = catchAsync(async (req, res) => {
   const result = await joinedParticipantsServices.createTripParticipants(
@@ -20,6 +21,21 @@ const createTripParticipants = catchAsync(async (req, res) => {
 const joinTrip = catchAsync(async (req, res) => {
   const id = req.params.id;
   const result = await joinedParticipantsServices.joinTrip(id, req.body);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "joinTrip successfully",
+    data: result,
+  });
+});
+
+const joinTripByOnlyCode = catchAsync(async (req, res) => {
+  const user = req.user as StudentJwtPayload;
+  const result = await joinedParticipantsServices.joinTripByOnlyCode(
+    user,
+    req.body
+  );
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -48,4 +64,5 @@ export const joinedParticipantsControllers = {
   createTripParticipants,
   joinTrip,
   requestPermissionSlip,
+  joinTripByOnlyCode,
 };

@@ -71,7 +71,7 @@ const getEachTripParticipants = async (
         let: { participantsIds: "$participants" },
         pipeline: [
           { $match: { $expr: { $in: ["$_id", "$$participantsIds"] } } },
-          { $match: { role: "student" } }, // ✅ only students
+          // { $match: { role: "student" } }, // ✅ only students
         ],
         as: "participants",
       },

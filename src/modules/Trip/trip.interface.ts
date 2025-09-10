@@ -7,6 +7,7 @@ export interface ITrip {
   trip_time: string;
   end_time: string;
   location: string;
+  leaving_place: string;
   status?: "planned" | "ongoing" | "completed" | "cancelled";
   code: string;
   participants?: Types.ObjectId[];

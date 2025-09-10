@@ -1,30 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import jsPDF from "jspdf";
 
-// interface Participant {
-//   firstName: string;
-//   lastName: string;
-//   role: string;
-// }
-
-// interface TripData {
-//   trip_name: string;
-//   trip_date: string;
-//   trip_time: string;
-//   end_time: string;
-//   location: string;
-//   code: string;
-//   status: string;
-//   participants: Participant[];
-//   createdBy: {
-//     user_name: string;
-//     email: string;
-//     phoneNumber: string;
-//     address: string;
-//     role: string;
-//   };
-// }
-
 export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
   return new Promise((resolve) => {
     // Create a new PDF document
@@ -41,14 +17,14 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
 
     let yPosition = margin;
 
-    const checkPageBreak = (requiredSpace: number) => {
-      if (yPosition + requiredSpace > pageHeight - 15) {
-        doc.addPage();
-        yPosition = margin;
-        return true;
-      }
-      return false;
-    };
+    // const checkPageBreak = (requiredSpace: number) => {
+    //   if (yPosition + requiredSpace > pageHeight - 15) {
+    //     doc.addPage();
+    //     yPosition = margin;
+    //     return true;
+    //   }
+    //   return false;
+    // };
 
     const drawHeaderBox = (
       text: string,
@@ -104,6 +80,7 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
       ],
       ["Time:", `${tripData.trip_time} - ${tripData.end_time}`],
       ["Location:", tripData.location],
+      ["Leaving place:", tripData.leaving_place],
       ["Trip Code:", tripData.code],
       ["Status:", tripData.status],
     ];

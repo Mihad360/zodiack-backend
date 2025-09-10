@@ -7,6 +7,15 @@ import { upload } from "../../utils/sendImageToCloudinary";
 const router = express.Router();
 
 router.get("/", auth("admin"), userControllers.getUsers);
+router.get("/:user_id/messages", userControllers.getAllMessageForUser);
+router.get(
+  "/:user_id/notifications",
+  userControllers.getAllNotificationForUser
+);
+router.get(
+  "/:user_id/conversations",
+  userControllers.getAllConversationForUser
+);
 router.get("/me", auth("admin", "teacher"), userControllers.getMe);
 router.patch(
   "/update-profile",

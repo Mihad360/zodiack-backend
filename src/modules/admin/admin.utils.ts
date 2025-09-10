@@ -1,10 +1,11 @@
+import config from "../../config";
+
 export const loginRequestEmailTemplate = (
   name: string,
   email: string,
-  password: string,
-  loginLink: string
+  password: string
 ) => {
-  const fullLoginLink = `${loginLink}?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+  const fullLoginLink = `${config.local_url}?email=${email}&password=${password}`;
 
   return `
     <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">

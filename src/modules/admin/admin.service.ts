@@ -20,20 +20,18 @@ const createTeacher = async (payload: IUser) => {
   const result = await UserModel.create(payload);
 
   if (result) {
-    const loginLink = "link_url";
     await sendEmail(
       result.email,
       "Verify you credintials by this link",
       loginRequestEmailTemplate(
         result.user_name,
         result.email,
-        payload.password,
-        loginLink
+        payload.password
       )
     );
 
     return {
-      message: "OTP sent to your email. Please verify to complete signup.",
+      message: "Please check you email. Please verify to complete signIn.",
     };
   } else {
     return { message: "Somethine went wrong!" };

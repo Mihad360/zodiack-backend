@@ -54,9 +54,44 @@ const deleteUser = catchAsync(async (req, res) => {
   });
 });
 
+const getAllMessageForUser = catchAsync(async (req, res) => {
+  const result = await userServices.getAllMessageForUser();
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "User deleted succesfully",
+    data: result,
+  });
+});
+const getAllNotificationForUser = catchAsync(async (req, res) => {
+  const result = await userServices.getAllNotificationForUser();
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "User deleted succesfully",
+    data: result,
+  });
+});
+
+const getAllConversationForUser = catchAsync(async (req, res) => {
+  const result = await userServices.getAllConversationForUser();
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "User deleted succesfully",
+    data: result,
+  });
+});
+
 export const userControllers = {
   getMe,
   editUserProfile,
   deleteUser,
   getUsers,
+  getAllMessageForUser,
+  getAllNotificationForUser,
+  getAllConversationForUser,
 };
