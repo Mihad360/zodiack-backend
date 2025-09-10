@@ -4,7 +4,7 @@ import sendResponse from "../../utils/sendResponse";
 import { conversationServices } from "./conversation.service";
 
 const createConversation = catchAsync(async (req, res) => {
-  const result = await conversationServices.createConversation();
+  const result = await conversationServices.createConversation(req.body);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

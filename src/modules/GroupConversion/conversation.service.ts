@@ -1,4 +1,8 @@
-const createConversation = async () => {};
+import { IConversation } from "./conversation.interface";
+
+const createConversation = async (payload: IConversation) => {
+  return payload;
+};
 const getAllConversation = async () => {};
 const getEachConversation = async () => {};
 const updateConversation = async () => {};
