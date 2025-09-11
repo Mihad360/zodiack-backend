@@ -2,6 +2,8 @@ import { Model } from "mongoose";
 
 export interface IUser {
   _id?: string;
+  firstName?: string;
+  lastName?: string;
   user_name: string;
   email: string;
   password: string;

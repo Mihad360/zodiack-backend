@@ -7,6 +7,8 @@ import { Types } from "mongoose";
 import { TripModel } from "./trip.model";
 import QueryBuilder from "../../builder/QueryBuilder";
 import { searchTrips } from "./trip.const";
+import { JwtPayload, StudentJwtPayload } from "../../interface/global";
+import dayjs from "dayjs";
 
 const createTrip = async (id: string, payload: ITrip) => {
   const isUserExist = await UserModel.findById(id);
@@ -25,11 +27,12 @@ const getTrips = async (query: Record<string, unknown>) => {
   const tripQuery = new QueryBuilder(
     TripModel.find().populate([
       {
-        path: "createdBy",
-        select: "-password",
+        path: "createdBy", // Populate createdBy (teacher) details
+        select: "-password", // Exclude password field from user data
       },
       {
-        path: "participants",
+        path: "participants.participantId", // Populate participants field in the Trip model
+        select: "firstName user_name", // You can modify the fields as needed
       },
     ]),
     query
@@ -45,8 +48,15 @@ const getTrips = async (query: Record<string, unknown>) => {
   return { meta, result };
 };
 
-const getEachTrip = async (id: string) => {
-  const isTripExist = await TripModel.findById(id).populate({
+const getEachTrip = async (user: StudentJwtPayload & JwtPayload) => {
+  const userId = user.user ? user.user : user.studentId;
+  const currentDate = new Date();
+  const formattedDate = dayjs(currentDate).format("YYYY-MM-DD");
+  const isTripExist = await TripModel.findOne({
+    status: "planned",
+    participants: userId,
+    trip_date: { $gte: formattedDate },
+  }).populate({
     path: "createdBy",
     select: "user_name",
   });
@@ -67,7 +77,7 @@ const getEachTripParticipants = async (
     // Lookup participants but only students
     {
       $lookup: {
-        from: "joinedparticipants", // participants collection
+        from: "joinedparticipant", // participants collection
         let: { participantsIds: "$participants" },
         pipeline: [
           { $match: { $expr: { $in: ["$_id", "$$participantsIds"] } } },

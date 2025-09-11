@@ -6,9 +6,10 @@ const joinedParticipantsSchema = new Schema<IJoinedParticipants>({
   lastName: { type: String, required: true },
   designation: { type: String, enum: ["student", "teacher"] },
   role: { type: String, default: "participant" },
+  isActive: { type: Boolean },
 });
 
 export const JoinedParticipantsModel = model<IJoinedParticipants>(
-  "JoinedParticipants",
+  "JoinedParticipant",
   joinedParticipantsSchema
 );

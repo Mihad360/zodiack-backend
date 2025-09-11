@@ -2,7 +2,7 @@ import HttpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { tripServices } from "./trip.service";
-import { JwtPayload } from "../../interface/global";
+import { JwtPayload, StudentJwtPayload } from "../../interface/global";
 
 const createTrip = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
@@ -30,8 +30,8 @@ const getTrips = catchAsync(async (req, res) => {
 });
 
 const getEachTrip = catchAsync(async (req, res) => {
-  const id = req.params.id;
-  const result = await tripServices.getEachTrip(id);
+  const user = req.user as StudentJwtPayload & JwtPayload;
+  const result = await tripServices.getEachTrip(user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

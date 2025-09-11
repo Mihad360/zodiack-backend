@@ -3,4 +3,5 @@ export interface IJoinedParticipants {
   lastName: string;
   designation: "student" | "teacher";
   role: "participant";
+  isActive: boolean;
 }

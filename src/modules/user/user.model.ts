@@ -4,13 +4,14 @@ import { IUser, User } from "./user.interface";
 
 const userSchema = new Schema<IUser, User>(
   {
-    user_name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    user_name: { type: String, default: null },
+    email: { type: String, unique: true, default: null },
+    password: { type: String, default: null },
     address: { type: String, default: null },
     role: {
       type: String,
       enum: ["teacher", "student", "admin"],
+      default: null,
     },
     profileImage: { type: String, default: null },
     phoneNumber: { type: String, default: null },
@@ -25,8 +26,10 @@ const userSchema = new Schema<IUser, User>(
 );
 
 userSchema.pre("save", async function (next) {
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  if (this.password) {
+    this.password = await bcrypt.hash(this.password, 12);
+    next();
+  }
 });
 
 userSchema.statics.isUserExistByEmail = async function (email: string) {

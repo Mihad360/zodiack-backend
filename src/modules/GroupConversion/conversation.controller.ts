@@ -2,6 +2,7 @@ import HttpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { conversationServices } from "./conversation.service";
+import { JwtPayload, StudentJwtPayload } from "../../interface/global";
 
 const createConversation = catchAsync(async (req, res) => {
   const result = await conversationServices.createConversation(req.body);
@@ -14,7 +15,8 @@ const createConversation = catchAsync(async (req, res) => {
   });
 });
 const getAllConversation = catchAsync(async (req, res) => {
-  const result = await conversationServices.getAllConversation();
+  const user = req.user as JwtPayload & StudentJwtPayload;
+  const result = await conversationServices.getAllConversation(user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

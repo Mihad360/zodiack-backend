@@ -34,7 +34,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
       console.log(error);
       throw new AppError(HttpStatus.UNAUTHORIZED, "Unauthorized");
     }
-
+console.log(decoded);
     const { role, email, iat } = decoded;
 
     // Skip all checks if role is 'student'

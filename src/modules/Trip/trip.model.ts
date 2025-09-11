@@ -44,8 +44,14 @@ const tripSchema = new Schema<ITrip>(
     },
     participants: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "JoinedParticipants",
+        participantId: {
+          type: Schema.Types.ObjectId,
+          refPath: "participants.ref_type", // Dynamically reference the participant model
+        },
+        ref_type: {
+          type: String,
+          enum: ["JoinedParticipant", "User"],
+        },
       },
     ],
     isDeleted: {

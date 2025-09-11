@@ -8,10 +8,14 @@ router.post(
   "/create-participant",
   joinedParticipantsControllers.createTripParticipants
 );
-router.post("/join-trip/:id", joinedParticipantsControllers.joinTrip);
+router.post(
+  "/join-trip/",
+  auth("participant", "teacher"),
+  joinedParticipantsControllers.joinTrip
+);
 router.post(
   "/join-trip-with-code",
-  auth("participant"),
+  auth("participant", "teacher"),
   joinedParticipantsControllers.joinTripByOnlyCode
 );
 router.post(
