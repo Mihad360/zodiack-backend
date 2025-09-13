@@ -1,7 +1,8 @@
+import { Types } from "mongoose";
+
 export interface IJoinedParticipants {
-  firstName: string;
-  lastName: string;
-  designation: "student" | "teacher";
+  user: Types.ObjectId | string;
+  fullName: string;
   role: "participant";
   isActive: boolean;
 }

@@ -5,9 +5,14 @@ import { MessageControllers } from "./message.controller";
 const router = express.Router();
 
 router.post(
-  "/:id/send-message",
-  auth("participant", "teacher"),
-  MessageControllers.sendMessage
+  "/send-message",
+  auth("student", "teacher"),
+  MessageControllers.sendMessageByText
+);
+router.post(
+  "/send-message",
+  auth("student", "teacher"),
+  MessageControllers.sendMessageByAttachment
 );
 router.get(
   "/:tripId",

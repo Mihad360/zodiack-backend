@@ -1,9 +1,9 @@
-import { ObjectId } from "mongoose";
+import { Types } from "mongoose";
 
 export interface IConversation {
-  teacher: ObjectId;
-  trip_id: ObjectId;
-  participants: ObjectId[];
-  lastMsg: string;
+  teacher: Types.ObjectId;
+  trip_id: Types.ObjectId;
+  participants: Types.ObjectId[];
+  lastMsg: Types.ObjectId;
   isDeleted: boolean;
 }

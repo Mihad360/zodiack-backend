@@ -25,16 +25,17 @@ const createTrip = async (id: string, payload: ITrip) => {
 
 const getTrips = async (query: Record<string, unknown>) => {
   const tripQuery = new QueryBuilder(
-    TripModel.find().populate([
-      {
-        path: "createdBy", // Populate createdBy (teacher) details
-        select: "-password", // Exclude password field from user data
-      },
-      {
-        path: "participants.participantId", // Populate participants field in the Trip model
-        select: "firstName user_name", // You can modify the fields as needed
-      },
-    ]),
+    TripModel.find()
+      .populate([
+        {
+          path: "createdBy", // Populate createdBy (teacher) details
+          select: "user_name role profileImage", // Exclude password field from user data
+        },
+      ])
+      .populate({
+        path: "participants",
+        select: "user_name role profileImage",
+      }),
     query
   )
     .search(searchTrips)
@@ -56,11 +57,15 @@ const getEachTrip = async (user: StudentJwtPayload & JwtPayload) => {
     status: "planned",
     participants: userId,
     trip_date: { $gte: formattedDate },
-  }).populate({
-    path: "createdBy",
-    select: "user_name",
-  });
-  // .populate("participants");
+  })
+    .populate({
+      path: "createdBy",
+      select: "user_name",
+    })
+    .populate({
+      path: "participants",
+      select: "user_name role profileImage",
+    });
   if (!isTripExist) {
     throw new AppError(HttpStatus.NOT_FOUND, "The trip is not exist");
   }
@@ -71,58 +76,29 @@ const getEachTripParticipants = async (
   id: string,
   query: Record<string, unknown>
 ) => {
-  const trips = await TripModel.aggregate([
-    { $match: { _id: new Types.ObjectId(id) } },
+  const tripQuery = new QueryBuilder(
+    TripModel.find({ _id: id })
+      .populate([
+        {
+          path: "createdBy", // Populate createdBy (teacher) details
+          select: "user_name role profileImage", // Exclude password field from user data
+        },
+      ])
+      .populate({
+        path: "participants",
+        select: "user_name role profileImage",
+      }),
+    query
+  )
+    .search(searchTrips)
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
 
-    // Lookup participants but only students
-    {
-      $lookup: {
-        from: "joinedparticipant", // participants collection
-        let: { participantsIds: "$participants" },
-        pipeline: [
-          { $match: { $expr: { $in: ["$_id", "$$participantsIds"] } } },
-          // { $match: { role: "student" } }, // ✅ only students
-        ],
-        as: "participants",
-      },
-    },
-
-    // Lookup createdBy but exclude password
-    {
-      $lookup: {
-        from: "users",
-        let: { creatorId: "$createdBy" },
-        pipeline: [
-          { $match: { $expr: { $eq: ["$_id", "$$creatorId"] } } },
-          { $project: { password: 0 } }, // ✅ remove password
-        ],
-        as: "createdBy",
-      },
-    },
-    { $unwind: "$createdBy" },
-
-    // Search by participant name if query provided
-    {
-      $match: {
-        $or: [
-          {
-            "participants.firstName": {
-              $regex: query.searchTerm || "",
-              $options: "i",
-            },
-          },
-          {
-            "participants.lastName": {
-              $regex: query.searchTerm || "",
-              $options: "i",
-            },
-          },
-        ],
-      },
-    },
-  ]);
-
-  return trips;
+  const meta = await tripQuery.countTotal();
+  const result = await tripQuery.modelQuery;
+  return { meta, result };
 };
 
 const mostRecentTrips = async () => {

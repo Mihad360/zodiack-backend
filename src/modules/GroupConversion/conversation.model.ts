@@ -7,10 +7,10 @@ const conversationSchema = new Schema<IConversation>(
     trip_id: { type: Schema.Types.ObjectId, ref: "Trip", required: true },
     participants: {
       type: [Schema.Types.ObjectId],
-      ref: "JoinedParticipant",
+      ref: "User",
       default: [],
     },
-    lastMsg: { type: String },
+    lastMsg: { type: Schema.Types.ObjectId, ref: "Message" },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

@@ -1,25 +1,26 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import jwt from "jsonwebtoken";
 import HttpStatus from "http-status";
 import AppError from "../../errors/AppError";
 import { TripModel } from "../Trip/trip.model";
-import { IJoinedParticipants } from "./joinedparticipants.interface";
-import { JoinedParticipantsModel } from "./joinedparticipants.model";
 import { sendPdfEmail } from "../../utils/sendEmail";
 import { generateTripPermissionPdf } from "./joinedparticipants.utils";
 import config from "../../config";
-import { JwtPayload, StudentJwtPayload } from "../../interface/global";
+import { JwtPayload } from "../../interface/global";
 import { ConversationModel } from "../GroupConversion/conversation.model";
 import { UserModel } from "../user/user.model";
 import { IUser } from "../user/user.interface";
+import { JoinedParticipantsModel } from "./joinedparticipants.model";
+import mongoose, { Types } from "mongoose";
 
 const createTripParticipants = async (payload: Partial<IUser>) => {
-  payload.user_name = `${payload.firstName} ${payload.lastName}`;
+  const fullName = `${payload.firstName} ${payload.lastName}`;
+  payload.user_name = fullName;
   const result = await UserModel.create(payload);
   const jwtPayload: JwtPayload = {
     user: result._id,
-    name: result.user_name,
-    email: result?.email,
-    role: result?.role,
+    name: fullName,
+    role: "participant",
     profileImage: result?.profileImage,
     isDeleted: result?.isDeleted,
   };
@@ -31,228 +32,298 @@ const createTripParticipants = async (payload: Partial<IUser>) => {
   }
 
   return {
-    role: result.role,
+    role: "participant",
     accessToken,
     data: result,
   };
 };
 
 const joinTrip = async (
-  user: StudentJwtPayload & JwtPayload,
+  user: JwtPayload,
   payload: { tripId: string; code: string }
 ) => {
   const { tripId, code } = payload;
-  const studentId = user.studentId ? user.studentId : user.user;
+  const userId = new Types.ObjectId(user.user);
+
   // Step 1: Find the trip by its ID
-  const isTripExist = await TripModel.findById(tripId);
-  if (!isTripExist) {
+  const trip = await TripModel.findById(tripId);
+  if (!trip) {
     throw new AppError(HttpStatus.NOT_FOUND, "The Trip is not found");
   }
 
   // Step 2: Validate the QR code
-  if (code && code !== isTripExist.code) {
+  if (code && code !== trip.code) {
     throw new AppError(HttpStatus.BAD_REQUEST, "The QR Code is invalid");
   }
 
-  // Step 3: Check if a conversation already exists for the trip and teacher
-  let existingConversation = await ConversationModel.findOne({
-    trip_id: tripId, // Match by trip_id
-    teacher: isTripExist.createdBy, // Match by teacher (createdBy)
-  })
-    .populate("teacher", "user_name") // Optionally populate teacher details
-    .populate("trip_id", "trip_name trip_date"); // Optionally populate trip details
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    // Step 3: Add user to the trip participants if not already added
+    if (!trip?.participants?.includes(userId)) {
+      await TripModel.findByIdAndUpdate(
+        trip._id,
+        { $addToSet: { participants: userId } }, // Add user ID only
+        { new: true, session }
+      );
+    }
 
-  const refType = user.studentId ? "JoinedParticipant" : "User";
-  const existingParticipant = isTripExist?.participants?.find(
-    (participant) =>
-      participant.participantId.toString() === studentId.toString() &&
-      participant.ref_type === refType
-  );
+    // Step 4: Check if a conversation already exists for the trip and teacher
+    let existingConversation = await ConversationModel.findOne({
+      trip_id: tripId,
+      teacher: trip.createdBy,
+    })
+      .populate("teacher", "user_name")
+      .populate("trip_id", "trip_name trip_date");
 
-  if (!existingParticipant) {
-    await TripModel.findByIdAndUpdate(
-      isTripExist._id,
-      {
-        $addToSet: {
-          participants: {
-            participantId: studentId,
-            ref_type: refType,
+    if (existingConversation && trip.status === "planned") {
+      // Step 5: Add user to conversation participants
+      existingConversation = await ConversationModel.findByIdAndUpdate(
+        existingConversation._id,
+        { $addToSet: { participants: userId } },
+        { new: true, session }
+      );
+
+      if (!existingConversation) {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "Failed to update conversation participants"
+        );
+      }
+
+      // Step 6: Add the user to the trip participants array (again, ensures safety)
+      const updatedTrip = await TripModel.findByIdAndUpdate(
+        trip._id,
+        { $addToSet: { participants: userId } },
+        { new: true, session }
+      );
+
+      if (!updatedTrip) {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "Failed to add user to trip"
+        );
+      }
+
+      // Step 7: Create JoinedParticipant if not exists
+      const existingParticipant = await JoinedParticipantsModel.findOne({
+        user: userId,
+      });
+      if (!existingParticipant) {
+        await JoinedParticipantsModel.create(
+          {
+            user: userId,
+            trip: trip._id,
+            fullName: user.name,
           },
+          { session }
+        );
+      }
+
+      return updatedTrip;
+    } else {
+      // Step 8: No conversation exists → create new conversation
+      const newConversation = await ConversationModel.create(
+        {
+          teacher: trip.createdBy,
+          trip_id: trip._id,
+          lastMsg: "",
         },
-      },
-      { new: true }
-    );
-  }
-
-  // Step 4: If the conversation exists and the trip status is "planned", update the conversation
-  if (existingConversation && isTripExist.status === "planned") {
-    // Add the student to the participants array in the existing conversation
-    existingConversation = await ConversationModel.findByIdAndUpdate(
-      existingConversation._id,
-      { $addToSet: { participants: studentId } }, // Add student to participants
-      { new: true }
-    );
-
-    if (!existingConversation) {
-      throw new AppError(
-        HttpStatus.BAD_REQUEST,
-        "Failed to update conversation participants"
+        { session }
       );
-    }
 
-    // Step 5: Add the student to the trip's participants array
-    const updateTripParticipant = await TripModel.findByIdAndUpdate(
-      isTripExist._id,
-      { $addToSet: { participants: studentId } }, // Add student to the trip participants
-      { new: true }
-    );
+      if (!newConversation) {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "New conversation create failed"
+        );
+      }
 
-    if (!updateTripParticipant) {
-      throw new AppError(
-        HttpStatus.BAD_REQUEST,
-        "Failed to add student to trip"
+      // Step 9: Add user to new conversation participants
+      const updatedConversation = await ConversationModel.findByIdAndUpdate(
+        newConversation[0]?._id,
+        { $addToSet: { participants: userId } },
+        { new: true, session }
       );
-    }
 
-    return updateTripParticipant; // Return the updated trip data
-  } else {
-    // Step 6: If no conversation exists, create a new conversation
-    const conversation = {
-      teacher: isTripExist.createdBy, // Teacher (createdBy)
-      trip_id: isTripExist._id, // The trip ID
-      lastMsg: "", // Last message (empty for now)
-    };
+      if (!updatedConversation) {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "Failed to add user to new conversation"
+        );
+      }
 
-    const newConversation = await ConversationModel.create(conversation);
-
-    // Step 7: Add the student to the participants array in the newly created conversation
-    const updateConversation = await ConversationModel.findByIdAndUpdate(
-      newConversation._id,
-      { $addToSet: { participants: studentId } }, // Add student to participants
-      { new: true }
-    );
-
-    if (!updateConversation) {
-      throw new AppError(
-        HttpStatus.BAD_REQUEST,
-        "Failed to add student to conversation"
+      // Step 10: Ensure user is in trip participants
+      const updatedTrip = await TripModel.findByIdAndUpdate(
+        trip._id,
+        { $addToSet: { participants: userId } },
+        { new: true, session }
       );
+
+      if (!updatedTrip) {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "Failed to add user to trip"
+        );
+      }
+
+      // Step 11: Create JoinedParticipant if not exists
+      const existingParticipant = await JoinedParticipantsModel.findOne({
+        user: userId,
+      });
+      if (!existingParticipant) {
+        await JoinedParticipantsModel.create(
+          {
+            user: userId,
+            trip: trip._id,
+            fullName: user.name,
+          },
+          { session }
+        );
+      }
+
+      await session.commitTransaction();
+      await session.endSession();
+      return updatedTrip;
     }
-
-    // Step 8: Add the student to the trip's participants array
-    const updateTripParticipant = await TripModel.findByIdAndUpdate(
-      isTripExist._id,
-      { $addToSet: { participants: studentId } }, // Add student to the trip participants
-      { new: true }
-    );
-
-    if (!updateTripParticipant) {
-      throw new AppError(
-        HttpStatus.BAD_REQUEST,
-        "Failed to add student to trip"
-      );
-    }
-
-    return updateTripParticipant; // Return the updated trip data
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+    throw new AppError(HttpStatus.BAD_REQUEST, error as any);
   }
 };
 
 const joinTripByOnlyCode = async (
-  user: StudentJwtPayload & JwtPayload,
+  user: JwtPayload,
   payload: { code: string }
 ) => {
-  const code = payload.code;
-  const studentId = user.studentId ? user.studentId : user.user;
+  const { code } = payload;
+  const userId = new Types.ObjectId(user.user); // Assuming user.user is the ObjectId
 
   // Step 1: Find the trip by its code
-  const isTripExist = await TripModel.findOne({ code: code });
+  const trip = await TripModel.findOne({ code: code });
 
-  if (!isTripExist) {
+  if (!trip) {
     throw new AppError(HttpStatus.NOT_FOUND, "The trip code is invalid");
   }
 
   // Step 2: Check if the code matches the trip's code
-  if (code && code !== isTripExist.code) {
+  if (code && code !== trip.code) {
     throw new AppError(HttpStatus.BAD_REQUEST, "The QR Code is invalid");
   }
 
-  // Step 3: Check if the conversation already exists for the trip and the teacher (createdBy) with "planned" status
-  let existingConversation = await ConversationModel.findOne({
-    trip_id: isTripExist._id, // Match by trip ID
-    teacher: isTripExist.createdBy, // Match by teacher (createdBy)
-  })
-    .populate("teacher", "user_name") // Optionally populate teacher details
-    .populate("trip_id", "trip_name trip_date"); // Optionally populate trip details
+  // Step 3: Initialize session for transactional updates
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
 
-  const refType = user.studentId ? "JoinedParticipant" : "User";
-  await TripModel.findByIdAndUpdate(
-    isTripExist._id,
-    {
-      $addToSet: {
-        participants: {
-          participantId: studentId, // The participant's ID (studentId)
-          ref_type: refType, // The type of participant (either "User" or "JoinedParticipant")
-        },
-      },
-    },
-    { new: true }
-  );
-
-  if (existingConversation && isTripExist.status === "planned") {
-    // If a conversation already exists and the trip status is "planned", add the student to the participants array
-    existingConversation = await ConversationModel.findByIdAndUpdate(
-      existingConversation._id,
-      { $addToSet: { participants: studentId } }, // Add student to participants
-      { new: true }
-    );
-
-    if (!existingConversation) {
-      throw new AppError(
-        HttpStatus.BAD_REQUEST,
-        "Failed to update conversation participants"
+    // Step 4: Add user to the trip participants if not already added
+    if (!trip?.participants?.includes(userId)) {
+      await TripModel.findByIdAndUpdate(
+        trip._id,
+        { $addToSet: { participants: userId } },
+        { new: true, session }
       );
     }
 
-    return existingConversation; // Return the updated conversation
-  } else {
-    // Step 4: If no conversation exists, create a new conversation
-    const conversation = {
-      teacher: isTripExist.createdBy, // Set the teacher (createdBy)
-      trip_id: isTripExist._id, // Set the trip ID
-      lastMsg: "", // Set the last message (empty for now)
-    };
+    // Step 5: Check if a conversation already exists for the trip and teacher (createdBy)
+    let existingConversation = await ConversationModel.findOne({
+      trip_id: trip._id,
+      teacher: trip.createdBy,
+    })
+      .populate("teacher", "user_name")
+      .populate("trip_id", "trip_name trip_date");
 
-    const newConversation = await ConversationModel.create(conversation);
-
-    // Step 5: Add the student to the participants array in the newly created conversation
-    const updateConversation = await ConversationModel.findByIdAndUpdate(
-      newConversation._id,
-      { $addToSet: { participants: studentId } }, // Add student to participants
-      { new: true }
-    );
-
-    if (!updateConversation) {
-      throw new AppError(
-        HttpStatus.BAD_REQUEST,
-        "Failed to add student to conversation"
+    if (existingConversation && trip.status === "planned") {
+      // Step 6: Add user to conversation participants if conversation exists
+      existingConversation = await ConversationModel.findByIdAndUpdate(
+        existingConversation._id,
+        { $addToSet: { participants: userId } },
+        { new: true, session }
       );
-    }
 
-    // Step 6: Update the trip with the new participant
-    const updateTripParticipant = await TripModel.findByIdAndUpdate(
-      isTripExist._id,
-      { $addToSet: { participants: studentId } }, // Add student to the trip participants
-      { new: true }
-    );
+      if (!existingConversation) {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "Failed to update conversation participants"
+        );
+      }
 
-    if (!updateTripParticipant) {
-      throw new AppError(
-        HttpStatus.BAD_REQUEST,
-        "Failed to add student to trip"
+      // Step 7: Ensure JoinedParticipant exists for the user
+      const existingParticipant = await JoinedParticipantsModel.findOne({
+        user: userId,
+      });
+
+      if (!existingParticipant) {
+        await JoinedParticipantsModel.create(
+          {
+            user: userId,
+            trip: trip._id,
+            fullName: user.name, // assuming `user.name` is a valid full name field
+          },
+        );
+      }
+
+      await session.commitTransaction();
+      await session.endSession();
+      return existingConversation;
+    } else {
+      // Step 8: If no conversation exists, create a new one
+      const newConversation = await ConversationModel.create({
+        teacher: trip.createdBy,
+        trip_id: trip._id,
+        lastMsg: "", // Assuming an empty initial message
+      });
+
+      // Step 9: Add user to the newly created conversation participants
+      const updatedConversation = await ConversationModel.findByIdAndUpdate(
+        newConversation._id,
+        { $addToSet: { participants: userId } },
+        { new: true, session }
       );
-    }
 
-    return updateTripParticipant; // Return the updated trip data
+      if (!updatedConversation) {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "Failed to add user to new conversation"
+        );
+      }
+
+      // Step 10: Add user to the trip participants array
+      const updatedTrip = await TripModel.findByIdAndUpdate(
+        trip._id,
+        { $addToSet: { participants: userId } },
+        { new: true, session }
+      );
+
+      if (!updatedTrip) {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "Failed to add user to trip"
+        );
+      }
+
+      // Step 11: Create a JoinedParticipant if not already created
+      const existingParticipant = await JoinedParticipantsModel.findOne({
+        user: userId,
+      });
+
+      if (!existingParticipant) {
+        await JoinedParticipantsModel.create({
+          user: userId,
+          trip: trip._id,
+          fullName: user.name, // assuming `user.name` is a valid full name field
+        });
+      }
+
+      await session.commitTransaction();
+      await session.endSession();
+      return updatedTrip;
+    }
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+    throw new AppError(HttpStatus.BAD_REQUEST, error as any);
   }
 };
 

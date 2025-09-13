@@ -4,10 +4,9 @@ import sendResponse from "../../utils/sendResponse";
 import { messageServices } from "./message.service";
 import { JwtPayload, StudentJwtPayload } from "../../interface/global";
 
-const sendMessage = catchAsync(async (req, res) => {
-  const tripId = req.params.id;
-  const user = req.user as JwtPayload & StudentJwtPayload;
-  const result = await messageServices.sendMessage(tripId, user, req.body);
+const sendMessageByText = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await messageServices.sendMessageByText(user, req.body);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -16,6 +15,19 @@ const sendMessage = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+const sendMessageByAttachment = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await messageServices.sendMessageByAttachment(user, req.body);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Message successfully",
+    data: result,
+  });
+});
+
 const getAllMessage = catchAsync(async (req, res) => {
   const tripId = req.params.tripId;
   const user = req.user as JwtPayload & StudentJwtPayload;
@@ -28,6 +40,7 @@ const getAllMessage = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
 const getEachMessage = catchAsync(async (req, res) => {
   const result = await messageServices.getEachMessage();
 
@@ -38,6 +51,7 @@ const getEachMessage = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
 const updateMessage = catchAsync(async (req, res) => {
   const result = await messageServices.updateMessage();
 
@@ -48,6 +62,7 @@ const updateMessage = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
 const deleteMessage = catchAsync(async (req, res) => {
   const result = await messageServices.deleteMessage();
 
@@ -60,7 +75,8 @@ const deleteMessage = catchAsync(async (req, res) => {
 });
 
 export const MessageControllers = {
-  sendMessage,
+  sendMessageByText,
+  sendMessageByAttachment,
   getAllMessage,
   getEachMessage,
   updateMessage,

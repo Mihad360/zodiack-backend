@@ -14,9 +14,6 @@ export interface ITrip {
   // The participants field is now an array of objects, each containing:
   // 1. participantId (ObjectId) which references either a User or JoinedParticipant
   // 2. ref_type (string) to specify if it's a User or JoinedParticipant
-  participants?: {
-    participantId: Types.ObjectId; // The ObjectId of the participant (User or JoinedParticipant)
-    ref_type?: "User" | "JoinedParticipant"; // Type of participant (User or JoinedParticipant)
-  }[];
+  participants?: Types.ObjectId[];
   isDeleted: boolean; // If the trip is deleted or not
 }

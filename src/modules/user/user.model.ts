@@ -4,8 +4,10 @@ import { IUser, User } from "./user.interface";
 
 const userSchema = new Schema<IUser, User>(
   {
+    firstName: { type: String, default: null },
+    lastName: { type: String, default: null },
     user_name: { type: String, default: null },
-    email: { type: String, unique: true, default: null },
+    email: { type: String, default: null },
     password: { type: String, default: null },
     address: { type: String, default: null },
     role: {

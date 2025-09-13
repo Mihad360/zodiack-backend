@@ -1,21 +1,20 @@
-import { JwtPayload, StudentJwtPayload } from "../../interface/global";
+import { JwtPayload } from "../../interface/global";
 import { IConversation } from "./conversation.interface";
 import { ConversationModel } from "./conversation.model";
 
 const createConversation = async (payload: IConversation) => {
   return payload;
 };
-const getAllConversation = async (user: JwtPayload & StudentJwtPayload) => {
-  const participantId = user.user ? user.user : user.studentId;
-  console.log(user);
+const getAllConversation = async (user: JwtPayload) => {
+  const userId = user.user;
   if (user.role === "participant") {
     const conversations = await ConversationModel.find({
-      participants: participantId, // Match the participant ID in the participants array
+      participants: userId, // Match the participant ID in the participants array
       isDeleted: false, // Optional: Only return conversations that are not deleted
     })
-      .populate("teacher", "user_name") // Populate teacher details (optional)
-      .populate("trip_id", "trip_name trip_date") // Populate trip details (optional)
-      .populate("participants", "firstName"); // Populate participant details (optional)
+      .populate("teacher", "user_name profileImage") // Populate teacher details (optional)
+      .populate("trip_id", "trip_name trip_date")
+      .populate("lastMsg");
 
     return conversations;
   } else if (user.role === "teacher") {
@@ -25,9 +24,8 @@ const getAllConversation = async (user: JwtPayload & StudentJwtPayload) => {
       teacher: teacherId, // Filter conversations where the teacher matches
       isDeleted: false, // Only return conversations that are not deleted
     })
-      .populate("teacher", "user_name") // Populate teacher details (optional)
       .populate("trip_id", "trip_name trip_date") // Populate trip details (optional)
-      .populate("participants", "firstName lastName"); // Populate participants (students) in the conversation
+      .populate("participants", "user_name role profileImage"); // Populate participants (students) in the conversation
 
     return conversations;
   }
