@@ -16,7 +16,7 @@ router.post(
 );
 router.get(
   "/:tripId",
-  auth("participant", "teacher"),
+  auth("student", "teacher"),
   MessageControllers.getAllMessage
 );
 router.get("/:id", MessageControllers.getEachMessage);

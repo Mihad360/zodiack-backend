@@ -11,7 +11,7 @@ export const userZodSchema = z.object({
     email: z.string().email("Invalid email format").optional(),
     password: z.string().min(6, "Password must be at least 6 characters"),
     address: z.string().optional(),
-    role: z.enum(["teacher", "student", "admin"]),
+    role: z.enum(["teacher", "student", "admin"]).optional(),
     profileImage: z.string().optional(),
     phoneNumber: z.string().optional(),
     otp: z.string().optional(),

@@ -2,7 +2,7 @@ import HttpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { messageServices } from "./message.service";
-import { JwtPayload, StudentJwtPayload } from "../../interface/global";
+import { JwtPayload } from "../../interface/global";
 
 const sendMessageByText = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
@@ -29,9 +29,9 @@ const sendMessageByAttachment = catchAsync(async (req, res) => {
 });
 
 const getAllMessage = catchAsync(async (req, res) => {
-  const tripId = req.params.tripId;
-  const user = req.user as JwtPayload & StudentJwtPayload;
-  const result = await messageServices.getAllMessage(user, tripId);
+  const id = req.params.id;
+  const user = req.user as JwtPayload;
+  const result = await messageServices.getAllMessage(id);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

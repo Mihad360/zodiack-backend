@@ -14,9 +14,20 @@ const createConversation = catchAsync(async (req, res) => {
     data: result,
   });
 });
-const getAllConversation = catchAsync(async (req, res) => {
-  const user = req.user as JwtPayload & StudentJwtPayload;
-  const result = await conversationServices.getAllConversation(user);
+const getAllStudentConversation = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await conversationServices.getAllStudentConversation(user);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Conversation successfully",
+    data: result,
+  });
+});
+const getAllTeacherConversation = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await conversationServices.getAllTeacherConversation(user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -26,7 +37,8 @@ const getAllConversation = catchAsync(async (req, res) => {
   });
 });
 const getEachConversation = catchAsync(async (req, res) => {
-  const result = await conversationServices.getEachConversation();
+  const id = req.params.id;
+  const result = await conversationServices.getEachConversation(id);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -58,8 +70,9 @@ const deleteConversation = catchAsync(async (req, res) => {
 
 export const conversationControllers = {
   createConversation,
-  getAllConversation,
+  getAllStudentConversation,
   getEachConversation,
   updateConversation,
   deleteConversation,
+  getAllTeacherConversation,
 };

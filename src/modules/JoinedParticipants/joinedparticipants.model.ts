@@ -3,7 +3,7 @@ import { IJoinedParticipants } from "./joinedparticipants.interface";
 
 const joinedParticipantsSchema = new Schema<IJoinedParticipants>({
   user: { type: Schema.Types.ObjectId, ref: "User" },
-  fullName: { type: String, required: true },
+  fullName: { type: String },
   role: { type: String, default: "participant" },
   isActive: { type: Boolean },
 });

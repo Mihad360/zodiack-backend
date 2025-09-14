@@ -1,43 +1,61 @@
+import HttpStatus from "http-status";
+import { Types } from "mongoose";
 import { JwtPayload } from "../../interface/global";
+import { JoinedParticipantsModel } from "../JoinedParticipants/joinedparticipants.model";
 import { IConversation } from "./conversation.interface";
 import { ConversationModel } from "./conversation.model";
+import AppError from "../../errors/AppError";
+import { UserModel } from "../user/user.model";
 
 const createConversation = async (payload: IConversation) => {
   return payload;
 };
-const getAllConversation = async (user: JwtPayload) => {
-  const userId = user.user;
-  if (user.role === "participant") {
-    const conversations = await ConversationModel.find({
-      participants: userId, // Match the participant ID in the participants array
-      isDeleted: false, // Optional: Only return conversations that are not deleted
-    })
-      .populate("teacher", "user_name profileImage") // Populate teacher details (optional)
-      .populate("trip_id", "trip_name trip_date")
-      .populate("lastMsg");
-
-    return conversations;
-  } else if (user.role === "teacher") {
-    const teacherId = user.user; // Assuming teacherId is stored as user.user
-
-    const conversations = await ConversationModel.find({
-      teacher: teacherId, // Filter conversations where the teacher matches
-      isDeleted: false, // Only return conversations that are not deleted
-    })
-      .populate("trip_id", "trip_name trip_date") // Populate trip details (optional)
-      .populate("participants", "user_name role profileImage"); // Populate participants (students) in the conversation
-
-    return conversations;
+const getAllStudentConversation = async (user: JwtPayload) => {
+  const userId = new Types.ObjectId(user.user);
+  const isPartExist = await JoinedParticipantsModel.findOne({ user: userId });
+  if (!isPartExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Participant not exist");
   }
+  const isConversationsExist = await ConversationModel.find({
+    participant_id: isPartExist._id,
+  }).populate("teacher");
+  if (!isConversationsExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Conversation not exist");
+  }
+  return isConversationsExist;
 };
-const getEachConversation = async () => {};
+
+const getAllTeacherConversation = async (user: JwtPayload) => {
+  const userId = new Types.ObjectId(user.user);
+  const isPartExist = await UserModel.findById(userId);
+  if (!isPartExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Participant not exist");
+  }
+  const isConversationsExist = await ConversationModel.find({
+    teacher: isPartExist._id,
+  }).populate("participant_id");
+  if (!isConversationsExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Conversation not exist");
+  }
+  return isConversationsExist;
+};
+const getEachConversation = async (id: string) => {
+  const isConversationExist = await ConversationModel.findById(id).populate(
+    "teacher participant_id lastMsg"
+  );
+  if (!isConversationExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Conversation not exist");
+  }
+  return isConversationExist;
+};
 const updateConversation = async () => {};
 const deleteConversation = async () => {};
 
 export const conversationServices = {
   createConversation,
-  getAllConversation,
+  getAllStudentConversation,
   getEachConversation,
   updateConversation,
   deleteConversation,
+  getAllTeacherConversation,
 };

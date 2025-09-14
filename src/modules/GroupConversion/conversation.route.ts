@@ -6,11 +6,20 @@ const router = express.Router();
 
 router.post("/create-conversation", conversationControllers.createConversation);
 router.get(
-  "/",
-  auth("participant", "teacher"),
-  conversationControllers.getAllConversation
+  "/student",
+  auth("student", "teacher"),
+  conversationControllers.getAllStudentConversation
 );
-router.get("/:id", conversationControllers.getEachConversation);
+router.get(
+  "/teacher",
+  auth("student", "teacher"),
+  conversationControllers.getAllTeacherConversation
+);
+router.get(
+  "/:id",
+  auth("student", "teacher"),
+  conversationControllers.getEachConversation
+);
 router.patch("/:id/message", conversationControllers.updateConversation);
 router.delete("/:id", conversationControllers.deleteConversation);
 

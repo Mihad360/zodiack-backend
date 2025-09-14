@@ -17,8 +17,9 @@ const createTeacher = async (payload: IUser) => {
   }
 
   payload.role = "teacher";
+  // console.log(payload);
   const result = await UserModel.create(payload);
-
+  // console.log(result);
   if (result) {
     await sendEmail(
       result.email,

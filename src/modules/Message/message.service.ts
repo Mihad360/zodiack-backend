@@ -2,7 +2,7 @@
 import HttpStatus from "http-status";
 /* eslint-disable no-case-declarations */
 import AppError from "../../errors/AppError";
-import { JwtPayload, StudentJwtPayload } from "../../interface/global";
+import { JwtPayload } from "../../interface/global";
 import { IMessage } from "./message.interface";
 import { MessageModel } from "./message.model";
 import { TripModel } from "../Trip/trip.model";
@@ -19,11 +19,7 @@ const sendMessageByText = async (user: JwtPayload, payload: IMessage) => {
 
     let conversationId;
     // Case for student: Find conversation with the teacher and the trip
-    if (
-      payload.msgType === "text" ||
-      payload.msgType === "attachments" ||
-      payload.msgType === "call"
-    ) {
+    if (payload.msgType === "text") {
       const trip = await TripModel.findOne({
         participants: { $in: [userId] }, // Check if user is part of the trip participants
       }).session(session); // Make sure to use session
@@ -212,40 +208,7 @@ const sendMessageByAttachment = async (user: JwtPayload, payload: IMessage) => {
       await session.commitTransaction();
       await session.endSession();
       return result[0]; // Return the first message from the result array
-    }
-    // else if (payload.msgType === "attachments") {
-    //   console.log("Attachment message received:", payload.msg);
-    //   if (payload.msg.length > 1000) {
-    //     throw new Error("Attachment is too large to process.");
-    //   }
-
-    //   // Commit transaction for attachment messages as well
-    //   await session.commitTransaction();
-    //   await session.endSession();
-
-    //   return {
-    //     sender: userId,
-    //     message: payload.msg,
-    //     type: "attachments",
-    //     conversation_id: conversationId?._id,
-    //     attachmentDetails: "attachment file data here", // Placeholder
-    //   };
-    // } else if (payload.msgType === "call") {
-    //   console.log("Call message received:", payload.msg);
-
-    //   // Commit transaction for call messages
-    //   await session.commitTransaction();
-    //   await session.endSession();
-
-    //   return {
-    //     sender: userId,
-    //     message: payload.msg,
-    //     type: "call",
-    //     conversation_id: conversationId?._id,
-    //     callDetails: "call details here", // Placeholder for call-related data
-    //   };
-    // }
-    else {
+    } else {
       throw new Error("Invalid message type");
     }
   } catch (error) {
@@ -255,42 +218,15 @@ const sendMessageByAttachment = async (user: JwtPayload, payload: IMessage) => {
   }
 };
 
-const getAllMessage = async (
-  user: JwtPayload & StudentJwtPayload,
-  tripId: string
-) => {
-  const userId = user.user ? user.user : user.studentId;
-  if (user.role === "participant") {
-    const messages = await MessageModel.findOne({
-      trip_id: tripId, // Messages for a specific trip
-      sender_id: userId,
-    })
-      .populate({
-        path: "sender_id", // Dynamically populate sender_id
-        select: "firstName lastName", // Select the fields you want to populate (e.g., user_name)
-      })
-      .populate({
-        path: "trip_id",
-        select: "trip_name",
-        populate: {
-          path: "createdBy", // Populate the createdBy field in the trip
-          select: "user_name email", // Select user_name and email of the creator
-        },
-      });
-    return messages;
-  } else if (user.role === "teacher") {
-    const messages = await MessageModel.find({
-      trip_id: tripId, // Messages for a specific trip
-      sender_id: userId,
-    })
-      .populate({
-        path: "sender_id", // Dynamically populate sender_id
-        select: "firstName lastName", // Select the fields you want to populate (e.g., user_name)
-      })
-      .populate("trip_id", "trip_name trip_date");
-    return messages;
-  }
+const getAllMessage = async (conversationId: string) => {
+  const messages = await MessageModel.find({ conversation_id: conversationId })
+    .populate("sender_id", "user_name") // Optionally populate sender details
+    .populate("receiver_id", "user_name") // Optionally populate receiver details
+    .sort({ createdAt: 1 }); // Sort messages by creation time (ascending)
+
+  return messages;
 };
+
 const getEachMessage = async () => {};
 const updateMessage = async () => {};
 const deleteMessage = async () => {};
