@@ -5,11 +5,8 @@ import { userZodSchema } from "../user/user.validation";
 import auth from "../../middlewares/auth";
 const router = Router();
 
-router.get(
-  "/teachers",
-  auth("admin"),
-  AdminController.getAllTeachers
-);
+router.get("/teachers", auth("admin"), AdminController.getAllTeachers);
+router.get("/:id", auth("admin"), AdminController.getEachTeacher);
 router.post(
   "/create-teacher",
   auth("admin"),

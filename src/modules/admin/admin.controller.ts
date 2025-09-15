@@ -26,7 +26,20 @@ const getAllTeachers = catchAsync(async (req, res) => {
   });
 });
 
+const getEachTeacher = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const result = await AdminServices.getEachTeacher(id);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Teacher created succesfully",
+    data: result,
+  });
+});
+
 export const AdminController = {
   createTeacher,
   getAllTeachers,
+  getEachTeacher,
 };

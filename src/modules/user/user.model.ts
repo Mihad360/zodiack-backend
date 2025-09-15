@@ -12,11 +12,12 @@ const userSchema = new Schema<IUser, User>(
     address: { type: String, default: null },
     role: {
       type: String,
-      enum: ["teacher", "student", "admin"],
+      enum: ["teacher", "student", "admin", "participant"],
       default: null,
     },
     profileImage: { type: String, default: null },
     phoneNumber: { type: String, default: null },
+    isActive: { type: Boolean, default: false },
     otp: { type: String, default: null },
     expiresAt: { type: Date, default: null },
     isVerified: { type: Boolean, default: false },

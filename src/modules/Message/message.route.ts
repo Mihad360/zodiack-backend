@@ -1,22 +1,30 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import auth from "../../middlewares/auth";
 import { MessageControllers } from "./message.controller";
+import { upload } from "../../utils/sendImageToCloudinary";
 
 const router = express.Router();
 
 router.post(
-  "/send-message",
-  auth("student", "teacher"),
+  "/:id/send-message",
+  auth("participant", "teacher"),
   MessageControllers.sendMessageByText
 );
 router.post(
-  "/send-message",
-  auth("student", "teacher"),
+  "/:id/send-attachment",
+  auth("participant", "teacher"),
+  upload.array("images"),
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.body.data) {
+      req.body = JSON.parse(req.body.data);
+    }
+    next();
+  },
   MessageControllers.sendMessageByAttachment
 );
 router.get(
-  "/:tripId",
-  auth("student", "teacher"),
+  "/:id",
+  auth("participant", "teacher"),
   MessageControllers.getAllMessage
 );
 router.get("/:id", MessageControllers.getEachMessage);

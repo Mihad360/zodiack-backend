@@ -10,12 +10,12 @@ router.post(
 );
 router.post(
   "/join-trip/",
-  auth("student", "teacher"),
+  auth("participant", "teacher"),
   joinedParticipantsControllers.joinTrip
 );
 router.post(
   "/join-trip-with-code",
-  auth("student", "teacher"),
+  auth("participant", "teacher"),
   joinedParticipantsControllers.joinTripByOnlyCode
 );
 router.post(

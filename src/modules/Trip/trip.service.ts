@@ -49,11 +49,15 @@ const getTrips = async (query: Record<string, unknown>) => {
   return { meta, result };
 };
 
-const getEachTrip = async (user: StudentJwtPayload & JwtPayload) => {
+const getEachTrip = async (
+  id: string,
+  user: StudentJwtPayload & JwtPayload
+) => {
   const userId = user.user ? user.user : user.studentId;
   const currentDate = new Date();
   const formattedDate = dayjs(currentDate).format("YYYY-MM-DD");
   const isTripExist = await TripModel.findOne({
+    _id: id,
     status: "planned",
     participants: userId,
     trip_date: { $gte: formattedDate },

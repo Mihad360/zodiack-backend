@@ -15,7 +15,7 @@ const messageSchema = new Schema<IMessage>(
       ref: "User", // Dynamically decide the reference model
     },
     attachment_id: {
-      type: Schema.Types.ObjectId,
+      type: [Schema.Types.ObjectId],
       ref: "Attachment", // Dynamically decide the reference model
     },
     // receiver_id: {

@@ -5,8 +5,9 @@ import { messageServices } from "./message.service";
 import { JwtPayload } from "../../interface/global";
 
 const sendMessageByText = catchAsync(async (req, res) => {
+  const id = req.params.id;
   const user = req.user as JwtPayload;
-  const result = await messageServices.sendMessageByText(user, req.body);
+  const result = await messageServices.sendMessageByText(id, user, req.body);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -17,8 +18,14 @@ const sendMessageByText = catchAsync(async (req, res) => {
 });
 
 const sendMessageByAttachment = catchAsync(async (req, res) => {
+  const id = req.params.id;
   const user = req.user as JwtPayload;
-  const result = await messageServices.sendMessageByAttachment(user, req.body);
+  const result = await messageServices.sendMessageByAttachment(
+    req.files,
+    id,
+    user,
+    req.body
+  );
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -31,7 +38,7 @@ const sendMessageByAttachment = catchAsync(async (req, res) => {
 const getAllMessage = catchAsync(async (req, res) => {
   const id = req.params.id;
   const user = req.user as JwtPayload;
-  const result = await messageServices.getAllMessage(id);
+  const result = await messageServices.getAllMessage(id, user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

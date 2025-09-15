@@ -18,6 +18,7 @@ import { IJoinedParticipants } from "./joinedparticipants.interface";
 const createTripParticipants = async (payload: Partial<IUser>) => {
   const fullName = `${payload.firstName} ${payload.lastName}`;
   payload.user_name = fullName;
+  payload.role = "participant";
   const result = await UserModel.create(payload);
   const jwtPayload: JwtPayload = {
     user: result._id,
@@ -195,7 +196,6 @@ const handleConversation = async (
           trip_id: trip._id, // The specific trip
           user: userId,
           participant_id: joinedPart._id, // Store the participant ID
-          participants: [userId], // Add the user (student) to participants
         },
       ],
       { session }
@@ -221,11 +221,11 @@ const ensureJoinedParticipant = async (
 
   if (!existingParticipant) {
     const joined = await JoinedParticipantsModel.create(
-      {
+      [{
         user: userId,
         trip: trip._id,
         fullName: userName,
-      },
+      }],
       { session }
     );
     return joined;

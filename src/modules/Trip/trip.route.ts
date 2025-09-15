@@ -12,7 +12,7 @@ router.get(
   auth("admin"),
   tripControllers.getEachTripParticipants
 );
-router.get("/trip", auth("participant"), tripControllers.getEachTrip);
+router.get("/:id", auth("participant"), tripControllers.getEachTrip);
 router.get("/", auth("admin"), tripControllers.getTrips);
 router.post(
   "/create-trip",

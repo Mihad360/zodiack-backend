@@ -1,6 +1,7 @@
 import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 import config from "../config";
 import multer, { StorageEngine } from "multer";
+import path from "path";
 
 // Cloudinary config
 cloudinary.config({
@@ -20,6 +21,9 @@ export const sendImageToCloudinary = (
     if (!fileBuffer) return reject(new Error("Missing file buffer"));
     if (!mimetype) return reject(new Error("Missing mimetype"));
 
+    // Strip extension from the file name
+    const nameWithoutExt = path.parse(imageName).name;
+
     // Convert to base64
     const base64Image = fileBuffer.toString("base64");
     const dataUri = `data:${mimetype};base64,${base64Image}`;
@@ -27,7 +31,7 @@ export const sendImageToCloudinary = (
     cloudinary.uploader.upload(
       dataUri,
       {
-        public_id: imageName,
+        public_id: nameWithoutExt,
         resource_type: "image",
         type: "upload",
       },

@@ -8,9 +8,10 @@ export interface IUser {
   email: string;
   password: string;
   address?: string;
-  role: "teacher" | "student" | "admin";
+  role: "teacher" | "student" | "admin" | "participant";
   profileImage?: string;
   phoneNumber?: string;
+  isActive?: boolean;
   otp?: string;
   expiresAt?: Date;
   isVerified?: boolean;

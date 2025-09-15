@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import HttpStatus from "http-status";
 /* eslint-disable no-case-declarations */
@@ -5,122 +6,74 @@ import AppError from "../../errors/AppError";
 import { JwtPayload } from "../../interface/global";
 import { IMessage } from "./message.interface";
 import { MessageModel } from "./message.model";
-import { TripModel } from "../Trip/trip.model";
 import { ConversationModel } from "../GroupConversion/conversation.model";
 import mongoose, { Types } from "mongoose";
+import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary";
+import { AttachmentModel } from "../Attachments/attachment.model";
+import {
+  IConversation,
+  IMessageConversation,
+} from "../GroupConversion/conversation.interface";
 
-const sendMessageByText = async (user: JwtPayload, payload: IMessage) => {
+const sendMessageByText = async (
+  conversationId: string,
+  user: JwtPayload,
+  payload: IMessage
+) => {
   const userId = user.user; // Extract the user ID from the JWT token
-
   // Start a session for the transaction
   const session = await mongoose.startSession();
+
   try {
     session.startTransaction();
 
-    let conversationId;
-    // Case for student: Find conversation with the teacher and the trip
-    if (payload.msgType === "text") {
-      const trip = await TripModel.findOne({
-        participants: { $in: [userId] }, // Check if user is part of the trip participants
-      }).session(session); // Make sure to use session
+    // Check if the conversation exists for the provided conversation ID and userId
+    const conversation = await ConversationModel.findOne({
+      _id: conversationId,
+      $or: [
+        { teacher: userId }, // Either the user is the teacher
+        { user: userId }, // Or the user is a participant in the conversation
+      ],
+    }).session(session); // Ensure session is used
 
-      if (!trip) {
-        throw new AppError(HttpStatus.NOT_FOUND, "No trip found for this user");
-      }
-
-      // For a student, the conversationId is associated with the teacher
-      if (trip?.createdBy?.toString() !== userId) {
-        conversationId = await ConversationModel.findOne({
-          teacher: trip.createdBy, // Teacher is the creator
-          trip_id: trip._id, // Associated trip ID
-        })
-          .select("_id")
-          .session(session); // Ensure the session is used
-
-        if (!conversationId) {
-          throw new AppError(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
-      } else {
-        // If the user is the teacher, we will find the conversation for the teacher
-        conversationId = await ConversationModel.findOne({
-          teacher: userId, // Teacher
-          trip_id: trip._id, // The trip that the conversation is linked to
-        })
-          .select("_id")
-          .session(session); // Ensure session is used
-
-        if (!conversationId) {
-          throw new AppError(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
-      }
-    }
-
-    payload.sender_id = userId as string; // Add sender ID
-    payload.conversation_id = conversationId?._id as string | Types.ObjectId; // Attach the conversation ID
-
-    // Now that we have the conversationId, we can create the message
-    let result;
-    if (payload.msgType === "text") {
-      // Create message with session for transaction
-      result = await MessageModel.create([payload], { session });
-      if (!result) {
-        throw new AppError(HttpStatus.BAD_REQUEST, "Message failed to send");
-      }
-
-      // Update conversation with last message ID
-      const conversation = await ConversationModel.findByIdAndUpdate(
-        conversationId?._id,
-        { lastMsg: result[0]._id },
-        { new: true, session }
+    if (!conversation) {
+      throw new AppError(
+        HttpStatus.NOT_FOUND,
+        "Conversation not found or user not authorized."
       );
-
-      if (!conversation) {
-        throw new AppError(
-          HttpStatus.BAD_REQUEST,
-          "Something went wrong during conversation update"
-        );
-      }
-
-      // Commit transaction after everything is done
-      await session.commitTransaction();
-      await session.endSession();
-      return result[0]; // Return the first message from the result array
     }
-    // else if (payload.msgType === "attachments") {
-    //   console.log("Attachment message received:", payload.msg);
-    //   if (payload.msg.length > 1000) {
-    //     throw new Error("Attachment is too large to process.");
-    //   }
 
-    //   // Commit transaction for attachment messages as well
-    //   await session.commitTransaction();
-    //   await session.endSession();
+    // Set the sender_id in the payload
+    payload.sender_id = userId;
+    payload.conversation_id = conversationId;
+    payload.msgType = "text";
 
-    //   return {
-    //     sender: userId,
-    //     message: payload.msg,
-    //     type: "attachments",
-    //     conversation_id: conversationId?._id,
-    //     attachmentDetails: "attachment file data here", // Placeholder
-    //   };
-    // } else if (payload.msgType === "call") {
-    //   console.log("Call message received:", payload.msg);
+    // Create the message with session for transaction
+    const result = await MessageModel.create([payload], { session });
 
-    //   // Commit transaction for call messages
-    //   await session.commitTransaction();
-    //   await session.endSession();
-
-    //   return {
-    //     sender: userId,
-    //     message: payload.msg,
-    //     type: "call",
-    //     conversation_id: conversationId?._id,
-    //     callDetails: "call details here", // Placeholder for call-related data
-    //   };
-    // }
-    else {
-      throw new Error("Invalid message type");
+    if (!result) {
+      throw new AppError(HttpStatus.BAD_REQUEST, "Message failed to send");
     }
+
+    // Update the conversation with the last message ID
+    const updatedConversation = await ConversationModel.findByIdAndUpdate(
+      conversationId,
+      { lastMsg: result[0]._id },
+      { new: true, session }
+    );
+
+    if (!updatedConversation) {
+      throw new AppError(
+        HttpStatus.BAD_REQUEST,
+        "Something went wrong during conversation update"
+      );
+    }
+
+    // Commit transaction after everything is done
+    await session.commitTransaction();
+    await session.endSession();
+
+    return result[0]; // Return the first message from the result array
   } catch (error) {
     await session.abortTransaction();
     await session.endSession();
@@ -128,89 +81,124 @@ const sendMessageByText = async (user: JwtPayload, payload: IMessage) => {
   }
 };
 
-const sendMessageByAttachment = async (user: JwtPayload, payload: IMessage) => {
+const sendMessageByAttachment = async (
+  files: any,
+  conversationId: string,
+  user: JwtPayload,
+  payload: IMessage
+) => {
   const userId = user.user; // Extract the user ID from the JWT token
 
   // Start a session for the transaction
   const session = await mongoose.startSession();
+
   try {
     session.startTransaction();
 
-    let conversationId;
-    // Case for student: Find conversation with the teacher and the trip
-    if (
-      payload.msgType === "text" ||
-      payload.msgType === "attachments" ||
-      payload.msgType === "call"
-    ) {
-      const trip = await TripModel.findOne({
-        participants: { $in: [userId] }, // Check if user is part of the trip participants
-      }).session(session); // Make sure to use session
+    // Check if the conversation exists for the provided conversation ID and userId
+    const conversation = await ConversationModel.findOne({
+      _id: conversationId,
+      $or: [
+        { teacher: userId }, // Either the user is the teacher
+        { user: userId }, // Or the user is a participant in the conversation
+      ],
+    }).session(session); // Ensure session is used
 
-      if (!trip) {
-        throw new AppError(HttpStatus.NOT_FOUND, "No trip found for this user");
-      }
-
-      // For a student, the conversationId is associated with the teacher
-      if (trip?.createdBy?.toString() !== userId) {
-        conversationId = await ConversationModel.findOne({
-          teacher: trip.createdBy, // Teacher is the creator
-          trip_id: trip._id, // Associated trip ID
-        })
-          .select("_id")
-          .session(session); // Ensure the session is used
-
-        if (!conversationId) {
-          throw new AppError(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
-      } else {
-        // If the user is the teacher, we will find the conversation for the teacher
-        conversationId = await ConversationModel.findOne({
-          teacher: userId, // Teacher
-          trip_id: trip._id, // The trip that the conversation is linked to
-        })
-          .select("_id")
-          .session(session); // Ensure session is used
-
-        if (!conversationId) {
-          throw new AppError(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
-      }
+    if (!conversation) {
+      throw new AppError(
+        HttpStatus.NOT_FOUND,
+        "Conversation not found or user not authorized."
+      );
     }
 
-    payload.sender_id = userId as string; // Add sender ID
-    payload.conversation_id = conversationId?._id as string | Types.ObjectId; // Attach the conversation ID
+    // Set the sender_id in the payload
+    payload.sender_id = userId;
+    payload.conversation_id = conversationId;
 
-    // Now that we have the conversationId, we can create the message
-    let result;
-    if (payload.msgType === "text") {
-      // Create message with session for transaction
-      result = await MessageModel.create([payload], { session });
-      if (!result) {
-        throw new AppError(HttpStatus.BAD_REQUEST, "Message failed to send");
+    const uploadedFiles: string[] = []; // Array to store the file URLs (secure_url)
+    const uploadedFilesIds: string[] = []; // Array to store attachment model IDs
+    const uploadedFileMimetypes: string[] = []; // Array to store mimetypes
+
+    if (files) {
+      for (const file of files as Express.Multer.File[]) {
+        const uploadedFile = await sendImageToCloudinary(
+          file.buffer,
+          file.originalname,
+          file.mimetype
+        );
+
+        uploadedFiles.push(uploadedFile.secure_url);
+        uploadedFileMimetypes.push(file.mimetype); // Store mimetype
       }
+    }
+    payload.attachment_id = [];
 
-      // Update conversation with last message ID
-      const conversation = await ConversationModel.findByIdAndUpdate(
-        conversationId?._id,
-        { lastMsg: result[0]._id },
-        { new: true, session }
+    const result = await MessageModel.create([payload], { session });
+
+    if (!result) {
+      throw new AppError(HttpStatus.BAD_REQUEST, "Message failed to send");
+    }
+
+    // 2. Create the Attachment models based on the uploaded files
+    for (let i = 0; i < uploadedFiles.length; i++) {
+      const fileUrls = uploadedFiles[i];
+      const mimetypes = uploadedFileMimetypes[i];
+      const attachment = await AttachmentModel.create(
+        [
+          {
+            conversation_id: conversation._id,
+            message_id: result[0]._id, // Associate attachment with the created message
+            fileUrl: fileUrls, // Store the Cloudinary URL of the uploaded file
+            mimeType: mimetypes, // Store the mimetype of the file
+          },
+        ],
+        { session } // Ensure session is passed for atomicity
       );
 
-      if (!conversation) {
+      if (!attachment) {
         throw new AppError(
           HttpStatus.BAD_REQUEST,
-          "Something went wrong during conversation update"
+          "Attachment creation failed"
         );
       }
 
-      // Commit transaction after everything is done
-      await session.commitTransaction();
-      await session.endSession();
-      return result[0]; // Return the first message from the result array
-    } else {
-      throw new Error("Invalid message type");
+      // Push the attachment ID into the array
+      uploadedFilesIds.push(attachment[0]._id.toString());
     }
+
+    // 3. Update the message with the attachment IDs
+    const updatedMessage = await MessageModel.findByIdAndUpdate(
+      result[0]._id,
+      { attachment_id: uploadedFilesIds }, // Update the attachment_id field with the created attachment IDs
+      { new: true, session }
+    );
+
+    if (!updatedMessage) {
+      throw new AppError(
+        HttpStatus.BAD_REQUEST,
+        "Failed to update the message with attachment IDs"
+      );
+    }
+
+    const updatedConversation = await ConversationModel.findByIdAndUpdate(
+      conversation._id,
+      { lastMsg: updatedMessage._id },
+      { new: true, session }
+    );
+
+    if (!updatedConversation) {
+      throw new AppError(
+        HttpStatus.BAD_REQUEST,
+        "Something went wrong during conversation update"
+      );
+    }
+
+    // Commit the transaction and end session
+    await session.commitTransaction();
+    await session.endSession();
+
+    // Return the result (updated message with attachment references)
+    return updatedMessage;
   } catch (error) {
     await session.abortTransaction();
     await session.endSession();
@@ -218,13 +206,41 @@ const sendMessageByAttachment = async (user: JwtPayload, payload: IMessage) => {
   }
 };
 
-const getAllMessage = async (conversationId: string) => {
-  const messages = await MessageModel.find({ conversation_id: conversationId })
-    .populate("sender_id", "user_name") // Optionally populate sender details
-    .populate("receiver_id", "user_name") // Optionally populate receiver details
-    .sort({ createdAt: 1 }); // Sort messages by creation time (ascending)
+const getAllMessage = async (conversationId: string, user: JwtPayload) => {
+  const conversation = (await ConversationModel.findOne({
+    _id: new Types.ObjectId(conversationId),
+    $or: [{ user: user.user }, { teacher: user.user }],
+  })
+    .populate({
+      path: "user",
+      select: "user_name profileImage updatedAt isActive role",
+    })
+    .populate({
+      path: "teacher",
+      select: "user_name profileImage updatedAt isActive role",
+    })) as IMessageConversation & IConversation;
 
-  return messages;
+  if (!conversation) {
+    throw new AppError(HttpStatus.NOT_FOUND, "The conversation not found");
+  }
+
+  const messages = await MessageModel.find({
+    conversation_id: conversation._id,
+  }).populate({ path: "attachment_id", select: "fileUrl mimeType" });
+
+  if (!messages) {
+    throw new AppError(HttpStatus.NOT_FOUND, "The messages not found");
+  }
+
+  if (user.role === "teacher") {
+    // If the user is a teacher, return conversation with the participant's data
+    return { conversation: { user: conversation.user }, messages };
+  } else if (user.role === "participant") {
+    // If the user is a participant, return conversation with the teacher's data
+    return { conversation: { teacher: conversation.teacher }, messages };
+  }
+
+  return { conversation, messages };
 };
 
 const getEachMessage = async () => {};

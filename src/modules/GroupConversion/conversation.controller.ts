@@ -2,7 +2,7 @@ import HttpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { conversationServices } from "./conversation.service";
-import { JwtPayload, StudentJwtPayload } from "../../interface/global";
+import { JwtPayload } from "../../interface/global";
 
 const createConversation = catchAsync(async (req, res) => {
   const result = await conversationServices.createConversation(req.body);

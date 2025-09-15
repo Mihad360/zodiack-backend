@@ -30,8 +30,9 @@ const getTrips = catchAsync(async (req, res) => {
 });
 
 const getEachTrip = catchAsync(async (req, res) => {
+  const id = req.params.id;
   const user = req.user as StudentJwtPayload & JwtPayload;
-  const result = await tripServices.getEachTrip(user);
+  const result = await tripServices.getEachTrip(id, user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
