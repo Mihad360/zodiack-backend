@@ -9,9 +9,16 @@ import { Server as SocketIOServer } from "socket.io";
 import { WebRTCUtils } from "./utils/webRtc";
 import { NotificationModel } from "./modules/Notification/notification.model";
 import cron from "node-cron";
+import { connectRedis } from "./utils/connectRedis";
+
 
 let server: HttpServer;
 let io: SocketIOServer;
+
+// import { ILocationTrack } from "./location.interface";
+
+
+
 
 async function main() {
   try {
@@ -38,6 +45,8 @@ async function main() {
     console.log(
       `\r✅ MongoDB connected successfully in ${Date.now() - dbStartTime}ms`
     );
+
+    await connectRedis();
 
     // Start HTTP server
     server = createServer(app);
