@@ -14,7 +14,7 @@ export interface ILocationTrack {
 
 export interface ILocationLatLong {
   userId?: Types.ObjectId;
-  latitude: number;
-  longitude: number;
+  latitude: number | undefined;
+  longitude: number | undefined;
   time: Date;
 }

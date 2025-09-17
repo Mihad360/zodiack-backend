@@ -104,13 +104,15 @@ const simulateRedisStorage = async (
       throw new AppError(HttpStatus.NOT_FOUND, "Location update failed");
     }
 
-    // Map the fetched locations into the required format
-    locationArray = locations.map((loc) => ({
+    const updatedLocationData = {
       userId: userObjectId,
-      latitude: loc.latitude,
-      longitude: loc.longitude,
+      latitude: updateLocationLatLong.latitude,
+      longitude: updateLocationLatLong.longitude,
       time: new Date(),
-    }));
+    };
+
+    // Add the new updated location to the location history
+    locationArray = [updatedLocationData];
 
     // Add the new locations to the tracking and buffer
     locate.addLocations(userId, locationArray);
