@@ -1,49 +1,10 @@
-// import { ILocationTrack } from "../modules/Location/location.interface";
-
-// export default class LocationStorage {
-//   // Internal array to store locations
-//   private locations: ILocationTrack[] = [];
-
-//   constructor(initialLocations: ILocationTrack[] = []) {
-//     this.locations = initialLocations;
-//   }
-
-//   /**
-//    * Add new locations to the storage
-//    * @param newLocations Array of ILocationTrack
-//    */
-//   addLocations(newLocations: ILocationTrack[]) {
-//     this.locations = [...this.locations, ...newLocations];
-//   }
-
-//   /**
-//    * Get all stored locations
-//    * @returns Array of ILocationTrack
-//    */
-//   getAllLocations(): ILocationTrack[] {
-//     return [...this.locations]; // return a copy to prevent external mutation
-//   }
-
-//   /**
-//    * Clear all stored locations
-//    */
-//   clearLocations() {
-//     this.locations = [];
-//   }
-
-//   /**
-//    * Get the number of stored locations
-//    */
-//   count(): number {
-//     return this.locations.length;
-//   }
-// }
-
 import { ILocationTrack } from "../modules/Location/location.interface";
 
 export default class LocationStorage {
   // Each userId gets its own location array
   private userLocations: Record<string, ILocationTrack[]> = {};
+  // Stores archived data when the buffer reaches 50
+  private archivedLocations: Record<string, ILocationTrack[]> = {};
 
   constructor(initialData: Record<string, ILocationTrack[]> = {}) {
     this.userLocations = initialData;
@@ -61,11 +22,28 @@ export default class LocationStorage {
     this.userLocations[userId].push(...newLocations);
   }
 
+  // Get all users' location data, including both current and archived data
+  getAllTrackedData(): Record<string, ILocationTrack[]> {
+    // Combine current user locations and archived locations
+    const allData: Record<string, ILocationTrack[]> = {};
+
+    for (const userId in this.userLocations) {
+      const currentLocations = this.userLocations[userId] || [];
+      const archivedLocations = this.archivedLocations[userId] || [];
+
+      // Combine both current and archived locations for each user
+      allData[userId] = [...archivedLocations, ...currentLocations];
+    }
+
+    return allData;
+  }
+
   /**
    * Get all locations for a specific user
    */
   getLocations(userId: string): ILocationTrack[] {
-    return this.userLocations[userId] ? [...this.userLocations[userId]] : [];
+    // Only return the current locations (not archived)
+    return this.userLocations[userId] || [];
   }
 
   /**
@@ -73,7 +51,11 @@ export default class LocationStorage {
    */
   clearLocations(userId: string) {
     if (this.userLocations[userId]) {
-      this.userLocations[userId] = [];
+      this.userLocations[userId] = []; // Clear current locations
+    }
+
+    if (this.archivedLocations[userId]) {
+      this.archivedLocations[userId] = []; // Clear archived locations as well
     }
   }
 
@@ -81,7 +63,10 @@ export default class LocationStorage {
    * Get count of locations for a specific user
    */
   count(userId: string): number {
-    return this.userLocations[userId]?.length || 0;
+    return (
+      (this.userLocations[userId]?.length || 0) +
+      (this.archivedLocations[userId]?.length || 0)
+    );
   }
 
   /**
@@ -96,5 +81,24 @@ export default class LocationStorage {
    */
   clearAll() {
     this.userLocations = {};
+    this.archivedLocations = {};
+  }
+
+  // Method to add data to archived storage when buffer is cleared
+  archiveLocations(userId: string) {
+    if (this.userLocations[userId] && this.userLocations[userId].length > 0) {
+      if (!this.archivedLocations[userId]) {
+        this.archivedLocations[userId] = [];
+      }
+      // Add the current locations to the archived storage
+      this.archivedLocations[userId].push(...this.userLocations[userId]);
+      // Clear the buffer after archiving
+      this.clearLocations(userId);
+    }
+  }
+
+  // Method to retrieve all archived data for a specific user
+  getArchivedUserData(userId: string): ILocationTrack[] {
+    return this.archivedLocations[userId] || [];
   }
 }

@@ -19,7 +19,18 @@ const requestLocation = catchAsync(async (req, res) => {
 const simulateRedisStorage = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
   const userId = user.user;
-  const result = await locationServices.simulateRedisStorage(userId as string);
+  const result = await locationServices.simulateRedisStorage(userId as string, req.body);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "createTripParticipants successfully",
+    data: result,
+  });
+});
+
+const batchUpdateUserLocations = catchAsync(async (req, res) => {
+  const result = await locationServices.batchUpdateUserLocations();
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -32,4 +43,5 @@ const simulateRedisStorage = catchAsync(async (req, res) => {
 export const locationControllers = {
   requestLocation,
   simulateRedisStorage,
+  batchUpdateUserLocations,
 };

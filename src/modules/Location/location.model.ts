@@ -11,9 +11,9 @@ const latLongSchema = new Schema<ILocationLatLong>({
 const locationTrackSchema = new Schema<ILocationTrack>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User" }, // Reference to the user (mihad)
-    latitude: { type: Number, required: true },
-    longitude: { type: Number, required: true },
-    isTrackingEnabled: { type: Boolean, default: true },
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
+    isTrackingEnabled: { type: Boolean, default: false },
     tracking: { type: [latLongSchema], default: [] },
     isDeleted: { type: Boolean, default: false },
   },

@@ -1,9 +1,10 @@
 import { Types } from "mongoose";
 
 export interface ILocationTrack {
+  time: string | number | Date;
   userId?: Types.ObjectId;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   isTrackingEnabled?: boolean;
   tracking?: ILocationLatLong[];
   isDeleted?: boolean;

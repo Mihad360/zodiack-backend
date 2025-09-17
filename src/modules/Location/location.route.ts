@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post(
   "/:id/request-loc",
-  auth("teacher"),
+  auth("teacher", "participant"),
   locationControllers.requestLocation
 );
 router.post(
@@ -14,5 +14,6 @@ router.post(
   auth("teacher", "participant"),
   locationControllers.simulateRedisStorage
 );
+router.post("/track-update", locationControllers.batchUpdateUserLocations);
 
 export const LocationRoutes = router;
