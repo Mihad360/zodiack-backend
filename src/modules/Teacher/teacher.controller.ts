@@ -31,7 +31,20 @@ const getTripStudents = catchAsync(async (req, res) => {
   });
 });
 
+const removeParticipant = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const result = await teacherServices.removeParticipant(id);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "joinTrip successfully",
+    data: result,
+  });
+});
+
 export const teacherControllers = {
   getTripsByTeacher,
   getTripStudents,
+  removeParticipant,
 };

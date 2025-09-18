@@ -3,6 +3,7 @@ import { guardRole } from "../../middlewares/roleGuard";
 import { userControllers } from "./user.controller";
 import auth from "../../middlewares/auth";
 import { upload } from "../../utils/sendImageToCloudinary";
+import { teacherControllers } from "../Teacher/teacher.controller";
 
 const router = express.Router();
 
@@ -29,5 +30,6 @@ router.delete(
   guardRole(["admin", "user"]),
   userControllers.deleteUser
 );
+router.delete("/:id", auth("teacher"), teacherControllers.removeParticipant);
 
 export const UserRoutes = router;
