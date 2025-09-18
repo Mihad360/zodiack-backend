@@ -3,19 +3,14 @@ import { INotification } from "./notification.interface";
 
 const notificationSchema = new Schema<INotification>(
   {
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    notification_for: { type: String, enum: ["admin", "user"], required: true },
-    target: {
+    sender: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Admin or recipient reference
+    recipient: { type: Schema.Types.ObjectId, ref: "User", default: null }, // Admin or recipient reference
+    type: {
       type: String,
-      enum: ["conversation", "trip", "call"],
-      required: true,
+      enum: ["user_registration", "user_login", "trip_join", "trip_reminder"],
     },
-    target_id: { type: Schema.Types.ObjectId, required: true },
-    title: { type: String, required: true },
-    content: { type: String, required: true },
-    is_read: { type: Boolean, default: false },
-    is_important: { type: Boolean, default: false },
-    isDeleted: { type: Boolean, default: false },
+    message: { type: String, required: true },
+    isRead: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

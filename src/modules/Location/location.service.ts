@@ -89,6 +89,7 @@ const simulateRedisStorage = async (
       );
     }
 
+    // Update the location
     const updateLocationLatLong = await LocationModel.findOneAndUpdate(
       {
         userId: userId,
@@ -122,8 +123,8 @@ const simulateRedisStorage = async (
 
     console.log(`User ${userId} locations in storage:`, allUserLocations);
 
-    // Check if the number of locations has reached 50
-    if (allUserLocations.length >= 50) {
+    // Check if the number of locations has reached 5
+    if (allUserLocations.length >= 5) {
       // Archive the locations before clearing the buffer
       locate.archiveLocations(userId);
     }
@@ -161,7 +162,7 @@ const batchUpdateUserLocations = async () => {
           `${timeDiff > 60 * 1000} User ${userId} inactive for 60s, batch updating...`
         );
         await updateBatchLocations(userId, locations);
-        locate.clearLocations(userId); // Clear after pushing to DB
+        locate.clearAllLocations(userId); // Clear after pushing to DB
       }
     }
   } catch (error) {
@@ -186,9 +187,6 @@ const updateBatchLocations = async (
         { userId: new Types.ObjectId(userId) },
         { $push: { tracking: locations } }
       );
-
-      // Clear in-memory locations after batch update
-      // locate.clearLocations(userId);
 
       console.log(`Batch update successful for user ${userId}`);
     }

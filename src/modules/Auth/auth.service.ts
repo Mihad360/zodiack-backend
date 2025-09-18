@@ -9,6 +9,8 @@ import config from "../../config";
 import { sendEmail } from "../../utils/sendEmail";
 import { Types } from "mongoose";
 import { checkOtp, generateOtp, verificationEmailTemplate } from "./auth.utils";
+import { createAdminNotification } from "../Notification/notification.utils";
+import { INotification } from "../Notification/notification.interface";
 
 const loginUser = async (payload: IAuth) => {
   const user = await UserModel.findOne({
@@ -49,6 +51,14 @@ const loginUser = async (payload: IAuth) => {
     await UserModel.findByIdAndUpdate(userId, {
       isVerified: true,
     });
+  }
+  if (accessToken && user.isVerified) {
+    const notInfo: INotification = {
+      sender: new Types.ObjectId(userId),
+      type: "user_login",
+      message: `User logged in: ${user.user_name} (${user.email})`,
+    };
+    await createAdminNotification(notInfo);
   }
 
   return {

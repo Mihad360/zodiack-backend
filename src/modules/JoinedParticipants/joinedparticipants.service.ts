@@ -14,6 +14,8 @@ import { JoinedParticipantsModel } from "./joinedparticipants.model";
 import mongoose, { Types } from "mongoose";
 import { ITrip } from "../Trip/trip.interface";
 import { IJoinedParticipants } from "./joinedparticipants.interface";
+import { INotification } from "../Notification/notification.interface";
+import { createTripJoinNotification } from "../Notification/notification.utils";
 
 const createTripParticipants = async (payload: Partial<IUser>) => {
   const fullName = `${payload.firstName} ${payload.lastName}`;
@@ -134,7 +136,13 @@ const joinTripByOnlyCode = async (
       joinedPart as IJoinedParticipants
     );
 
-    // Step 5: Create JoinedParticipant if not exists
+    const notInfo: INotification = {
+      sender: new Types.ObjectId(joinedPart.user),
+      recipient: updatedTrip?.createdBy,
+      message: `A participant joined the trip: (${joinedPart.fullName})`,
+      type: "trip_join",
+    };
+    await createTripJoinNotification(notInfo);
 
     await session.commitTransaction();
     await session.endSession();
@@ -221,14 +229,16 @@ const ensureJoinedParticipant = async (
 
   if (!existingParticipant) {
     const joined = await JoinedParticipantsModel.create(
-      [{
-        user: userId,
-        trip: trip._id,
-        fullName: userName,
-      }],
+      [
+        {
+          user: userId,
+          trip: trip._id,
+          fullName: userName,
+        },
+      ],
       { session }
     );
-    return joined;
+    return joined[0];
   } else {
     return existingParticipant;
   }

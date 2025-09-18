@@ -11,6 +11,7 @@ import { MessageRoutes } from "../modules/Message/message.route";
 import { AttachmentRoutes } from "../modules/Attachments/attachment.route";
 import { CallRoutes } from "../modules/Calls/calls.route";
 import { LocationRoutes } from "../modules/Location/location.route";
+import { ReminderRoutes } from "../modules/Reminder/reminder.route";
 
 export const routesConfig = [
   { path: "/users", handler: UserRoutes },
@@ -25,5 +26,6 @@ export const routesConfig = [
   { path: "/messages", handler: MessageRoutes },
   { path: "/attachments", handler: AttachmentRoutes },
   { path: "/location", handler: LocationRoutes },
+  { path: "/reminders", handler: ReminderRoutes },
   { path: "/calls", handler: CallRoutes },
 ];

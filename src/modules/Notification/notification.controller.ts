@@ -2,19 +2,11 @@ import HttpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { notificationServices } from "./notification.service";
+import { JwtPayload } from "../../interface/global";
 
-const createNotification = catchAsync(async (req, res) => {
-  const result = await notificationServices.createNotification();
-
-  sendResponse(res, {
-    statusCode: HttpStatus.OK,
-    success: true,
-    message: "Notification successfully",
-    data: result,
-  });
-});
-const getAllUserSpeceficNotification = catchAsync(async (req, res) => {
-  const result = await notificationServices.getAllUserSpeceficNotification();
+const getAllAdminNotification = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await notificationServices.getAllAdminNotification(user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -23,8 +15,20 @@ const getAllUserSpeceficNotification = catchAsync(async (req, res) => {
     data: result,
   });
 });
-const getAllNotification = catchAsync(async (req, res) => {
-  const result = await notificationServices.getAllNotification();
+const getTeacherNotifications = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await notificationServices.getTeacherNotifications(user);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Notification successfully",
+    data: result,
+  });
+});
+const getParticipantNotifications = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await notificationServices.getParticipantNotifications(user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -34,17 +38,8 @@ const getAllNotification = catchAsync(async (req, res) => {
   });
 });
 const updateNotification = catchAsync(async (req, res) => {
-  const result = await notificationServices.updateNotification();
-
-  sendResponse(res, {
-    statusCode: HttpStatus.OK,
-    success: true,
-    message: "Notification successfully",
-    data: result,
-  });
-});
-const deleteNotification = catchAsync(async (req, res) => {
-  const result = await notificationServices.deleteNotification();
+  const id = req.params.id;
+  const result = await notificationServices.updateNotification(id);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -55,9 +50,8 @@ const deleteNotification = catchAsync(async (req, res) => {
 });
 
 export const notificationControllers = {
-  createNotification,
-  getAllUserSpeceficNotification,
-  getAllNotification,
+  getAllAdminNotification,
+  getTeacherNotifications,
   updateNotification,
-  deleteNotification,
+  getParticipantNotifications,
 };
