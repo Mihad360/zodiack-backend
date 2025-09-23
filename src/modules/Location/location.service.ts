@@ -7,12 +7,17 @@ import AppError from "../../errors/AppError";
 import HttpStatus from "http-status";
 import LocationStorage from "../../utils/locationStorage";
 import { UserModel } from "../user/user.model";
+import { TripModel } from "../Trip/trip.model";
+import { JwtPayload } from "../../interface/global";
 
 const locate = new LocationStorage();
 // Initialize an array to simulate Redis storage (for testing purposes)
-let locationArray: ILocationTrack[] | ILocationLatLong[] = [];
+let locationArray: ILocationLatLong[] = [];
 
-const requestLocation = async (id: string, payload: ILocationTrack) => {
+const requestLocation = async (
+  id: string | Types.ObjectId,
+  payload: ILocationTrack
+) => {
   // Ensure that the userId is converted to a valid ObjectId
   const userId = new Types.ObjectId(id);
   const isUserExist = await UserModel.findById(userId);
@@ -67,6 +72,36 @@ const requestLocation = async (id: string, payload: ILocationTrack) => {
       error as any
     );
   }
+};
+
+const requestLocationsForMultipleStudents = async (tripId: string) => {
+  const trip = await TripModel.findById(tripId).populate("participants");
+  if (!trip) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Trip not found");
+  }
+
+  // Loop through each student in the trip and request their location
+  const studentIds = trip.participants; // Assume participants is an array of student userIds
+  const locations = [];
+
+  for (const studentId of studentIds as Types.ObjectId[]) {
+    const id = studentId as Types.ObjectId | string | undefined;
+
+    // Check if id is undefined before calling the requestLocation function
+    if (id === undefined) {
+      continue; // Skip this iteration if id is undefined
+    }
+
+    const location = await requestLocation(id, {
+      userId: id,
+      isTrackingEnabled: true,
+      time: new Date(), // Add the current time as required by the ILocationTrack interface
+    });
+
+    locations.push(location);
+  }
+
+  return locations;
 };
 
 const simulateRedisStorage = async (
@@ -199,8 +234,39 @@ const updateBatchLocations = async (
   }
 };
 
+const getAllLocations = async () => {
+  const locations = await LocationModel.find({ isTrackingEnabled: true }).sort({
+    createdAt: -1,
+  });
+  if (!locations) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Locations not found");
+  }
+  return locations;
+};
+
+const getMyLocations = async (user: JwtPayload) => {
+  const userId = new Types.ObjectId(user.user);
+  const isUserExist = await UserModel.findById(userId);
+  if (!isUserExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found");
+  }
+  const locations = await LocationModel.find({
+    userId: isUserExist._id,
+    isTrackingEnabled: true,
+  }).sort({
+    createdAt: -1,
+  });
+  if (!locations) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Locations not found");
+  }
+  return locations;
+};
+
 export const locationServices = {
   requestLocation,
   simulateRedisStorage,
   batchUpdateUserLocations,
+  requestLocationsForMultipleStudents,
+  getAllLocations,
+  getMyLocations,
 };

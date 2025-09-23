@@ -16,10 +16,25 @@ const requestLocation = catchAsync(async (req, res) => {
   });
 });
 
+const requestLocationsForMultipleStudents = catchAsync(async (req, res) => {
+  const id = req.params.tripId;
+  const result = await locationServices.requestLocationsForMultipleStudents(id);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "createTripParticipants successfully",
+    data: result,
+  });
+});
+
 const simulateRedisStorage = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
   const userId = user.user;
-  const result = await locationServices.simulateRedisStorage(userId as string, req.body);
+  const result = await locationServices.simulateRedisStorage(
+    userId as string,
+    req.body
+  );
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -40,8 +55,34 @@ const batchUpdateUserLocations = catchAsync(async (req, res) => {
   });
 });
 
+const getAllLocations = catchAsync(async (req, res) => {
+  const result = await locationServices.getAllLocations();
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "createTripParticipants successfully",
+    data: result,
+  });
+});
+
+const getMyLocations = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await locationServices.getMyLocations(user);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "createTripParticipants successfully",
+    data: result,
+  });
+});
+
 export const locationControllers = {
   requestLocation,
   simulateRedisStorage,
   batchUpdateUserLocations,
+  requestLocationsForMultipleStudents,
+  getAllLocations,
+  getMyLocations,
 };

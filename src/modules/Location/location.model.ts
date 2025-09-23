@@ -3,8 +3,8 @@ import { ILocationLatLong, ILocationTrack } from "./location.interface";
 
 const latLongSchema = new Schema<ILocationLatLong>({
   userId: { type: Schema.Types.ObjectId, ref: "User" },
-  latitude: { type: Number, required: true },
-  longitude: { type: Number, required: true },
+  latitude: { type: Number },
+  longitude: { type: Number },
   time: { type: Date },
 });
 

@@ -83,7 +83,13 @@ const joinTrip = async (
       joinedPart as IJoinedParticipants
     );
 
-    // Step 5: Create JoinedParticipant if not exists
+    const notInfo: INotification = {
+      sender: new Types.ObjectId(joinedPart.user),
+      recipient: updatedTrip?.createdBy,
+      message: `A participant joined the trip: (${joinedPart.fullName})`,
+      type: "trip_join",
+    };
+    await createTripJoinNotification(notInfo);
 
     await session.commitTransaction();
     await session.endSession();
