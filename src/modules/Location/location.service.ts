@@ -9,10 +9,8 @@ import LocationStorage from "../../utils/locationStorage";
 import { UserModel } from "../user/user.model";
 import { TripModel } from "../Trip/trip.model";
 import { JwtPayload } from "../../interface/global";
+import { emitLocationRequest } from "../../utils/socket";
 
-const locate = new LocationStorage();
-// Initialize an array to simulate Redis storage (for testing purposes)
-let locationArray: ILocationLatLong[] = [];
 
 const requestLocation = async (
   id: string | Types.ObjectId,
@@ -34,7 +32,8 @@ const requestLocation = async (
     if (!location) {
       // If location doesn't exist, create a new one with tracking enabled
       payload.userId = userId;
-      payload.isTrackingEnabled = true; // Default to enabling tracking
+      payload.isTrackingEnabled = true;
+      payload.time = new Date(Date.now() + 10 * 60 * 1000); // Default to enabling tracking
       location = await LocationModel.create(payload);
 
       if (!location) {
@@ -43,10 +42,9 @@ const requestLocation = async (
           "Failed to create location."
         );
       }
-
-      // After successful creation, simulate the storage process
-      //   processLocationDataEvery5Seconds(id);
-
+      // Emit location request to the user
+      await emitLocationRequest(id as string);
+      
       return location;
     } else {
       // Save the updated location
@@ -59,9 +57,10 @@ const requestLocation = async (
         },
         { new: true }
       );
+      console.log("kljflkfj", userId);
 
-      // After successfully updating the location, simulate the storage process
-      //   processLocationDataEvery5Seconds(id);
+      // Emit location request to the user
+      await emitLocationRequest(userId.toString());
 
       return updateLoc;
     }
@@ -95,7 +94,7 @@ const requestLocationsForMultipleStudents = async (tripId: string) => {
     const location = await requestLocation(id, {
       userId: id,
       isTrackingEnabled: true,
-      time: new Date(), // Add the current time as required by the ILocationTrack interface
+      time: new Date(),
     });
 
     locations.push(location);
@@ -104,132 +103,156 @@ const requestLocationsForMultipleStudents = async (tripId: string) => {
   return locations;
 };
 
-const simulateRedisStorage = async (
-  userId: string,
-  payload: ILocationTrack
-) => {
+const sendLatLongs = async (userId: string, payload: ILocationTrack) => {
   try {
     const userObjectId = new Types.ObjectId(userId);
 
-    // Fetch the user's locations from the database
-    const locations = await LocationModel.find({
+    // Fetch the user's location from the database
+    const location = await LocationModel.findOne({
       userId: userObjectId,
       isTrackingEnabled: true,
     });
 
-    if (!locations.length) {
+    if (!location) {
+      throw new AppError(
+        HttpStatus.NOT_FOUND,
+        "Location not found for the user"
+      );
+    }
+    console.log(location.tracking?.length);
+
+    // Check if tracking time has exceeded the time limit
+    const currentTime = new Date();
+
+    if (currentTime >= location.time) {
+      location.isTrackingEnabled = false; // Disable further tracking
+      await location.save(); // Save the updated location to reflect tracking is stopped
+      return { message: "location tracking has stopped" }; // Early return to stop the update
+    }
+
+    if (location.tracking && location.tracking.length > 100) {
+      location.tracking = []; // Remove the oldest entry if the array exceeds 100
+    }
+
+    // Push the new latitude and longitude into the tracking array
+    location?.tracking?.push({
+      userId: userObjectId,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      time: new Date(),
+    });
+
+    // Update the current location with the new latitude and longitude
+    location.latitude = payload.latitude;
+    location.longitude = payload.longitude;
+
+    // Save the updated location data
+    await location.save();
+
+    console.log(`Location for user ${userId} updated successfully`);
+
+    // Optionally, log the updated tracking data
+    console.log("Updated tracking array:", location.tracking);
+
+    return location; // Return the updated location document
+  } catch (error) {
+    console.error("Error in sendLatLongs:", error);
+    throw new AppError(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      "Error updating location",
+      error as any
+    );
+  }
+};
+
+const extendTime = async (
+  teacherId: string,
+  userId: string,
+  payload: { time: string | number }
+) => {
+  try {
+    const userObjectId = new Types.ObjectId(userId);
+    const timeInput = payload.time;
+    console.log(timeInput, userObjectId);
+    // Initialize timeInMinutes to a default value
+    let timeInMinutes = 0; // Default value to ensure it's defined
+
+    // Fetch the user's location from the database
+    const location = await LocationModel.findOne({
+      userId: userObjectId,
+      isTrackingEnabled: true,
+    });
+
+    if (!location) {
       throw new AppError(
         HttpStatus.NOT_FOUND,
         "Location not found for the user"
       );
     }
 
-    // Update the location
-    const updateLocationLatLong = await LocationModel.findOneAndUpdate(
-      {
-        userId: userId,
-        isTrackingEnabled: true,
-      },
-      {
-        latitude: payload.latitude,
-        longitude: payload.longitude,
-      },
-      { new: true }
-    );
-    if (!updateLocationLatLong) {
-      throw new AppError(HttpStatus.NOT_FOUND, "Location update failed");
-    }
+    // Calculate the new time (add time to the current time)
+    const currentTime = new Date();
 
-    const updatedLocationData = {
-      userId: userObjectId,
-      latitude: updateLocationLatLong.latitude,
-      longitude: updateLocationLatLong.longitude,
-      time: new Date(),
-    };
+    if (typeof timeInput === "string") {
+      // Validate and process the time string (e.g., "1h" or "30m")
+      const regex = /^(\d+)(h|m)$/i;
+      const match = timeInput.match(regex);
+      console.log(match);
+      if (match) {
+        const value = parseInt(match[1], 10); // Extract the number part
+        const unit = match[2].toLowerCase(); // Extract the unit (h or m)
 
-    // Add the new updated location to the location history
-    locationArray = [updatedLocationData];
-
-    // Add the new locations to the tracking and buffer
-    locate.addLocations(userId, locationArray);
-
-    // Fetch all stored locations for this user (including both current and archived data)
-    const allUserLocations = locate.getLocations(userId);
-
-    console.log(`User ${userId} locations in storage:`, allUserLocations);
-
-    // Check if the number of locations has reached 5
-    if (allUserLocations.length >= 5) {
-      // Archive the locations before clearing the buffer
-      locate.archiveLocations(userId);
-    }
-
-    console.log(allUserLocations.length); // Log the number of locations
-    return allUserLocations;
-  } catch (error) {
-    console.error("Error in simulateRedisStorage:", error);
-    throw new AppError(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      "Error simulating Redis storage",
-      error as any
-    );
-  }
-};
-
-const batchUpdateUserLocations = async () => {
-  try {
-    const allUserLocations = locate.getAllTrackedData(); // Get both current and archived data
-    console.log(allUserLocations);
-
-    for (const [userId, locations] of Object.entries(allUserLocations)) {
-      // Sort locations by time (most recent first)
-      const sortedLocations = locations.sort(
-        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-      );
-      // Get the most recent location (first one in sorted array)
-      const latestLocation = sortedLocations[0];
-      console.log(latestLocation);
-      // Compare time of the latest location with the current time
-      const timeDiff = Date.now() - new Date(latestLocation?.time).getTime();
-      // If the time difference is greater than 60 seconds, perform batch update
-      if (timeDiff > 60 * 1000) {
-        console.log(
-          `${timeDiff > 60 * 1000} User ${userId} inactive for 60s, batch updating...`
+        if (unit === "h") {
+          // Convert hours to minutes
+          timeInMinutes = value * 60;
+        } else if (unit === "m") {
+          // Use minutes directly
+          timeInMinutes = value;
+        }
+      } else {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "Invalid time format. Use '10m' for minutes or '2h' for hours."
         );
-        await updateBatchLocations(userId, locations);
-        locate.clearAllLocations(userId); // Clear after pushing to DB
       }
-    }
-  } catch (error) {
-    console.error("Error in batchUpdateUserLocations:", error);
-    throw new AppError(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      "Error during batch update"
-    );
-  }
-};
-
-// Function to handle batch update in the database for the user
-const updateBatchLocations = async (
-  userId: string,
-  locations: ILocationTrack[]
-) => {
-  try {
-    // Assume `locations` contains all the tracked latitudes/longitudes
-    if (locations.length > 0) {
-      // Batch update: Push the locations to the user's tracking array in MongoDB or whatever your structure is
-      await LocationModel.updateOne(
-        { userId: new Types.ObjectId(userId) },
-        { $push: { tracking: locations } }
+    } else if (typeof timeInput === "number") {
+      // If it's a number, we assume it's in minutes
+      timeInMinutes = timeInput;
+    } else {
+      throw new AppError(
+        HttpStatus.BAD_REQUEST,
+        "Time input must be a number or a valid string (e.g., '10m' or '2h')."
       );
-
-      console.log(`Batch update successful for user ${userId}`);
     }
+
+    // Add the time in minutes to the existing time
+    const updatedTime = new Date(currentTime.getTime() + timeInMinutes * 60000); // Add the time in minutes to the existing time
+
+    // Use findByIdAndUpdate to directly update the `time` field
+    const updatedLocation = await LocationModel.findByIdAndUpdate(
+      userObjectId, // Use userObjectId to find the document
+      { time: updatedTime }, // Update the `time` field
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedLocation) {
+      throw new AppError(
+        HttpStatus.NOT_FOUND,
+        "Location not found for the user"
+      );
+    }
+
+    console.log(
+      `Location time for user ${userId} updated successfully to: ${updatedTime}`
+    );
+
+    return updatedLocation; // Return the updated location document
   } catch (error) {
-    console.error("Error in updateBatchLocations:", error);
+    console.error("Error in updateTime:", error);
     throw new AppError(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      "Error during batch location update"
+      HttpStatus.BAD_REQUEST,
+      "Error updating time",
+      error as any
     );
   }
 };
@@ -264,9 +287,9 @@ const getMyLocations = async (user: JwtPayload) => {
 
 export const locationServices = {
   requestLocation,
-  simulateRedisStorage,
-  batchUpdateUserLocations,
+  sendLatLongs,
   requestLocationsForMultipleStudents,
   getAllLocations,
   getMyLocations,
+  extendTime,
 };

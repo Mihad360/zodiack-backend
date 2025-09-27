@@ -21,7 +21,7 @@ const getAllStudentConversation = async (user: JwtPayload) => {
     trip_id: isPartExist._id,
   }).populate({
     path: "teacher",
-    select: "user_name profileImage role updatedAt isActive",
+    select: "name profileImage role updatedAt isActive",
   });
   if (!isConversationsExist) {
     throw new AppError(HttpStatus.NOT_FOUND, "Conversation not exist");
@@ -43,7 +43,7 @@ const getAllTeacherConversation = async (user: JwtPayload) => {
     teacher: userId,
   }).populate({
     path: "user",
-    select: "user_name profileImage role updatedAt isActive",
+    select: "name profileImage role updatedAt isActive",
   });
   if (!isConversationsExist) {
     throw new AppError(HttpStatus.NOT_FOUND, "Conversation not exist");
@@ -54,11 +54,11 @@ const getEachConversation = async (id: string) => {
   const isConversationExist = await ConversationModel.findById(id)
     .populate({
       path: "teacher",
-      select: "user_name profileImage role",
+      select: "name profileImage role",
     })
     .populate({
       path: "user",
-      select: "user_name profileImage role",
+      select: "name profileImage role",
     });
 
   if (!isConversationExist) {

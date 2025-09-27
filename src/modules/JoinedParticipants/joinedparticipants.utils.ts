@@ -123,11 +123,7 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
       }
 
       doc.text((index + 1).toString(), margin + 2, yPosition + 2);
-      doc.text(
-        `${participant.firstName} ${participant.lastName}`,
-        margin + 12,
-        yPosition + 2
-      );
+      doc.text(`${participant.name}`, margin + 12, yPosition + 2);
       doc.text(participant.role, margin + 70, yPosition + 2);
       yPosition += 4;
     });
@@ -139,7 +135,7 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
     yPosition += 4;
 
     const creatorInfo = [
-      ["Name:", tripData.createdBy.user_name],
+      ["Name:", tripData.createdBy.name],
       ["Role:", tripData.createdBy.role],
       ["Email:", tripData.createdBy.email],
       ["Phone:", tripData.createdBy.phoneNumber],

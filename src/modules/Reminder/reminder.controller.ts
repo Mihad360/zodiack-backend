@@ -6,7 +6,21 @@ import { JwtPayload } from "../../interface/global";
 
 const setReminder = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
-  const result = await reminderServices.setReminder( req.body, user);
+  const result = await reminderServices.setReminder(req.body, user);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Notification successfully",
+    data: result,
+  });
+});
+
+const getMyReminders = catchAsync(async (req, res) => {
+  const id = req.params.tripId;
+  const user = req.user as JwtPayload;
+  const userId = user.user as string;
+  const result = await reminderServices.getMyReminders(id, userId);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -18,4 +32,5 @@ const setReminder = catchAsync(async (req, res) => {
 
 export const reminderControllers = {
   setReminder,
+  getMyReminders,
 };

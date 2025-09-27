@@ -213,11 +213,11 @@ const getAllMessage = async (conversationId: string, user: JwtPayload) => {
   })
     .populate({
       path: "user",
-      select: "user_name profileImage updatedAt isActive role",
+      select: "name profileImage updatedAt isActive role",
     })
     .populate({
       path: "teacher",
-      select: "user_name profileImage updatedAt isActive role",
+      select: "name profileImage updatedAt isActive role",
     })) as IMessageConversation & IConversation;
 
   if (!conversation) {

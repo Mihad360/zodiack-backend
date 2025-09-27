@@ -15,7 +15,7 @@ const getAllAdminNotification = async (user: JwtPayload) => {
     type: "user_login",
   })
     .sort({ createdAt: -1 })
-    .populate({ path: "sender", select: "user_name" });
+    .populate({ path: "sender", select: "name" });
   if (!notifications) {
     throw new AppError(HttpStatus.NOT_FOUND, "The notification not available");
   }
@@ -32,7 +32,7 @@ const getTeacherNotifications = async (user: JwtPayload) => {
     type: "trip_join",
   })
     .sort({ createdAt: -1 })
-    .populate({ path: "sender", select: "user_name" });
+    .populate({ path: "sender", select: "name" });
   if (!notifications) {
     throw new AppError(HttpStatus.NOT_FOUND, "The notification not available");
   }
@@ -49,7 +49,7 @@ const getParticipantNotifications = async (user: JwtPayload) => {
     type: "trip_reminder",
   })
     .sort({ createdAt: -1 })
-    .populate({ path: "sender", select: "user_name" });
+    .populate({ path: "sender", select: "name" });
   if (!notifications) {
     throw new AppError(HttpStatus.NOT_FOUND, "The notification not available");
   }

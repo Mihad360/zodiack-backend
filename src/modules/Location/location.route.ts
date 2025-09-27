@@ -16,7 +16,7 @@ router.get(
 );
 router.post(
   "/:id/request-loc",
-  auth("teacher", "participant"),
+  auth("teacher"),
   locationControllers.requestLocation
 );
 router.post(
@@ -27,8 +27,12 @@ router.post(
 router.post(
   "/loc-response",
   auth("teacher", "participant"),
-  locationControllers.simulateRedisStorage
+  locationControllers.sendLatLongs
 );
-router.post("/track-update", locationControllers.batchUpdateUserLocations);
+router.post(
+  "/:userId/extend-loc-time",
+  auth("teacher"),
+  locationControllers.extendTime
+);
 
 export const LocationRoutes = router;

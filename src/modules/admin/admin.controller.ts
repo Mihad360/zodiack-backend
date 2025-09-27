@@ -38,8 +38,21 @@ const getEachTeacher = catchAsync(async (req, res) => {
   });
 });
 
+const updateLicense = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const result = await AdminServices.updateLicense(id, req.body);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Teacher created succesfully",
+    data: result,
+  });
+});
+
 export const AdminController = {
   createTeacher,
   getAllTeachers,
   getEachTeacher,
+  updateLicense,
 };

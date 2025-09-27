@@ -4,10 +4,11 @@ import { reminderControllers } from "./reminder.controller";
 
 const router = express.Router();
 
-router.post(
-  "/set-reminder",
-  auth("teacher"),
-  reminderControllers.setReminder
+router.get(
+  "/trip-reminders/:tripId",
+  auth("teacher", "participant"),
+  reminderControllers.getMyReminders
 );
+router.post("/set-reminder", auth("teacher"), reminderControllers.setReminder);
 
 export const ReminderRoutes = router;

@@ -4,9 +4,9 @@ import { IUser, User } from "./user.interface";
 
 const userSchema = new Schema<IUser, User>(
   {
-    firstName: { type: String, default: null },
-    lastName: { type: String, default: null },
-    user_name: { type: String, default: null },
+    name: { type: String, default: null },
+    fatherName: { type: String, default: null },
+    motherName: { type: String, default: null },
     email: { type: String, default: null },
     password: { type: String, default: null },
     address: { type: String, default: null },
@@ -21,6 +21,7 @@ const userSchema = new Schema<IUser, User>(
     otp: { type: String, default: null },
     expiresAt: { type: Date, default: null },
     isVerified: { type: Boolean, default: false },
+    licenseExpiresAt: { type: Date, default: null },
     isLicenseAvailable: { type: Boolean, default: false },
     passwordChangedAt: { type: Date, default: null },
     isDeleted: { type: Boolean, default: false },

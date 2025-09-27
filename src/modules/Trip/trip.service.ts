@@ -29,12 +29,12 @@ const getTrips = async (query: Record<string, unknown>) => {
       .populate([
         {
           path: "createdBy", // Populate createdBy (teacher) details
-          select: "user_name role profileImage", // Exclude password field from user data
+          select: "name role profileImage", // Exclude password field from user data
         },
       ])
       .populate({
         path: "participants",
-        select: "user_name role profileImage",
+        select: "name role profileImage",
       }),
     query
   )
@@ -64,11 +64,11 @@ const getEachTrip = async (
   })
     .populate({
       path: "createdBy",
-      select: "user_name",
+      select: "name",
     })
     .populate({
       path: "participants",
-      select: "user_name role profileImage",
+      select: "name role profileImage",
     });
   if (!isTripExist) {
     throw new AppError(HttpStatus.NOT_FOUND, "The trip is not exist");
@@ -85,12 +85,12 @@ const getEachTripParticipants = async (
       .populate([
         {
           path: "createdBy", // Populate createdBy (teacher) details
-          select: "user_name role profileImage", // Exclude password field from user data
+          select: "name role profileImage", // Exclude password field from user data
         },
       ])
       .populate({
         path: "participants",
-        select: "user_name role profileImage",
+        select: "name role profileImage",
       }),
     query
   )

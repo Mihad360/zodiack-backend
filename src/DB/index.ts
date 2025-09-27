@@ -1,7 +1,7 @@
 import { UserModel } from "../modules/user/user.model";
 
 const admin = {
-  user_name: "admin",
+  name: "admin",
   email: "admin@gmail.com",
   password: "123456",
   role: "admin",

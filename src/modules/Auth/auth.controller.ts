@@ -26,6 +26,28 @@ const loginUser = catchAsync(async (req, res) => {
   });
 });
 
+const participantLogin = catchAsync(async (req, res) => {
+  const result = await authServices.participantLogin(req.body);
+  const { accessToken, role } = result;
+
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 365 * 60 * 60 * 7,
+  });
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Logged in successfully",
+    data: {
+      role,
+      accessToken,
+    },
+  });
+});
+
 const forgetPassword = catchAsync(async (req, res) => {
   const result = await authServices.forgetPassword(req.body.email);
 
@@ -77,4 +99,5 @@ export const authControllers = {
   verifyOtp,
   resetPassword,
   changePassword,
+  participantLogin,
 };

@@ -48,6 +48,21 @@ const setReminder = async (payload: IReminder, user: JwtPayload) => {
   }
 };
 
+const getMyReminders = async (tripId: string, userId: string) => {
+  const id = new Types.ObjectId(userId);
+  const isTripExist = await TripModel.findById(tripId);
+  if (!isTripExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Trip not found");
+  }
+  if (isTripExist.participants?.includes(id)) {
+    const result = await ReminderModel.find({ trip_id: isTripExist._id });
+    return result;
+  } else {
+    throw new AppError(HttpStatus.NOT_FOUND, "Reminders not found");
+  }
+};
+
 export const reminderServices = {
   setReminder,
+  getMyReminders,
 };

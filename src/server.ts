@@ -5,20 +5,12 @@ import mongoose from "mongoose";
 import app from "./app"; // Express app
 import seedSuperAdmin from "./DB"; // Seeding function
 import config from "./config";
-import { Server as SocketIOServer } from "socket.io";
-import { WebRTCUtils } from "./utils/webRtc";
-import { NotificationModel } from "./modules/Notification/notification.model";
+import { initSocketIO } from "./utils/socket";
 import cron from "node-cron";
-import { connectRedis } from "./utils/connectRedis";
-
+import { UserModel } from "./modules/user/user.model";
+import { TripModel } from "./modules/Trip/trip.model";
 
 let server: HttpServer;
-let io: SocketIOServer;
-
-// import { ILocationTrack } from "./location.interface";
-
-
-
 
 async function main() {
   try {
@@ -43,58 +35,11 @@ async function main() {
     // Stop the connecting animation
     clearInterval(loader);
     console.log(
-      `\r✅ MongoDB connected successfully in ${Date.now() - dbStartTime}ms`
+      `\r✅ Mongodb connected successfully in ${Date.now() - dbStartTime}ms`
     );
-
-    await connectRedis();
 
     // Start HTTP server
     server = createServer(app);
-
-    // Initialize Socket.IO on top of your HTTP server
-    io = new SocketIOServer(server, {
-      cors: {
-        origin: "*", // allow all origins for testing; lock down in production
-        methods: ["GET", "POST"],
-      },
-    });
-
-    // Setup WebRTC signaling
-    io.on("connection", (socket) => {
-      console.log(`User connected: ${socket.id}`);
-
-      // Create a new WebRTC utility instance for this socket
-      const webrtcUtils = new WebRTCUtils(socket);
-
-      // WebRTC signaling events
-      socket.on("offer", (offer) => {
-        console.log("Received offer from:", socket.id);
-        webrtcUtils.handleOffer(offer);
-      });
-
-      socket.on("answer", (answer) => {
-        console.log("Received answer from:", socket.id);
-        webrtcUtils.handleAnswer(answer);
-      });
-
-      socket.on("ice-candidate", (candidate) => {
-        console.log("Received ICE candidate from:", socket.id);
-        webrtcUtils.handleIceCandidate(candidate);
-      });
-
-      // Handle incoming messages
-      socket.on("message", (message) => {
-        console.log("Message received from:", socket.id, message);
-
-        // Broadcast message to all other connected users
-        socket.broadcast.emit("message", message);
-      });
-
-      socket.on("disconnect", () => {
-        console.log(`User disconnected: ${socket.id}`);
-      });
-    });
-
     // Start the server and log the time taken
     const serverStartTime = Date.now();
     server.listen(config.PORT, () => {
@@ -103,27 +48,46 @@ async function main() {
       );
     });
 
+    // Initialize Socket.IO
+    initSocketIO(server);
+
     cron.schedule("* * * * *", async () => {
-      try {
-        // Fetch unread notifications for admin
-        const unreadNotifications = await NotificationModel.find({
-          status: "unread",
-        });
+      const currentDate = new Date();
+      const currentDateString = currentDate.toISOString()?.split("T")[0]; // Format the current date as YYYY-MM-DD
 
-        if (unreadNotifications.length > 0) {
-          console.log(
-            `You have ${unreadNotifications.length} unread notifications.`
-          );
+      const expiredTeachers = await UserModel.find({
+        role: "teacher",
+        licenseExpiresAt: { $lte: currentDate },
+        isLicenseAvailable: true,
+      });
 
-          // Optionally, send reminders (like email/SMS/alerts) to admin
-          // sendNotificationToAdmin(unreadNotifications);
+      if (expiredTeachers) {
+        for (const teacher of expiredTeachers) {
+          if (teacher.isLicenseAvailable === true) {
+            teacher.isLicenseAvailable = false;
+            teacher.isActive = false;
+            await teacher.save();
+          }
         }
-      } catch (error) {
-        console.error("Error checking unread notifications:", error);
       }
+
+      console.log("Checked and updated expired teachers' licenses.");
+
+      const completedTrips = await TripModel.find({
+        trip_date: { $lte: currentDateString },
+        status: "completed",
+      });
+
+      if (completedTrips) {
+        for (const trip of completedTrips) {
+          trip.participants = [];
+          await trip.save();
+        }
+      }
+
+      console.log("Checked and updated completed trips.");
     });
 
-    // Start seeding in parallel after the server has started
     await Promise.all([seedSuperAdmin()]);
   } catch (error) {
     console.error("Error in main function:", error);

@@ -5,6 +5,7 @@ export interface JwtPayload {
   email?: string;
   role: string | undefined;
   name?: string;
+  isLicenseAvailable?: boolean;
   profileImage?: string;
   isDeleted?: boolean;
 }

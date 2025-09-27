@@ -6,41 +6,8 @@ import AppError from "../../errors/AppError";
 import { UserModel } from "./user.model";
 import { JwtPayload } from "../../interface/global";
 import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary";
-import { sendEmail } from "../../utils/sendEmail";
-import { generateOtp, verificationEmailTemplate } from "../Auth/auth.utils";
 import QueryBuilder from "../../builder/QueryBuilder";
 import { searchUsers } from "./user.const";
-
-const registerUser = async (file: any, payload: IUser) => {
-  const isUserExist = await UserModel.findOne({ email: payload?.email });
-  if (isUserExist) {
-    throw new AppError(HttpStatus.BAD_REQUEST, "The User already exists");
-  }
-
-  const otp = generateOtp();
-  await sendEmail(
-    payload.email,
-    "Verify your email - Signup",
-    verificationEmailTemplate(payload.user_name, otp)
-  );
-
-  if (file) {
-    const imageName = `${payload.user_name}`;
-    const profileImg = await sendImageToCloudinary(
-      file.buffer,
-      imageName,
-      file.mimetype
-    );
-    payload.profileImage = profileImg?.secure_url as string | undefined;
-    payload.role = "student";
-
-    await UserModel.create(payload);
-  }
-
-  return {
-    message: "OTP sent to your email. Please verify to complete signup.",
-  };
-};
 
 const getUsers = async (query: Record<string, unknown>) => {
   const userQuery = new QueryBuilder(
@@ -85,12 +52,12 @@ const editUserProfile = async (
   const updateData: Partial<IUser> = {};
 
   if (payload) {
-    updateData.user_name = payload.user_name && payload.user_name;
+    updateData.name = payload.name && payload.name;
     updateData.address = payload.address && payload.address;
     updateData.phoneNumber = payload.phoneNumber && payload.phoneNumber;
   }
   if (file) {
-    const imageName = `${payload.user_name}`;
+    const imageName = `${payload.name}`;
     const imageInfo = await sendImageToCloudinary(
       file.buffer,
       imageName,
@@ -131,7 +98,6 @@ const getAllNotificationForUser = async () => {};
 const getAllConversationForUser = async () => {};
 
 export const userServices = {
-  registerUser,
   getMe,
   editUserProfile,
   deleteUser,

@@ -2,9 +2,9 @@ import { Model } from "mongoose";
 
 export interface IUser {
   _id?: string;
-  firstName?: string;
-  lastName?: string;
-  user_name: string;
+  name?: string;
+  fatherName?: string;
+  motherName?: string;
   email: string;
   password: string;
   address?: string;
@@ -15,6 +15,7 @@ export interface IUser {
   otp?: string;
   expiresAt?: Date;
   isVerified?: boolean;
+  licenseExpiresAt?: Date;
   isLicenseAvailable?: boolean;
   passwordChangedAt?: Date;
   isDeleted?: boolean;

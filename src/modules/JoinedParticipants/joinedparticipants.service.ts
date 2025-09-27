@@ -18,13 +18,20 @@ import { INotification } from "../Notification/notification.interface";
 import { createTripJoinNotification } from "../Notification/notification.utils";
 
 const createTripParticipants = async (payload: Partial<IUser>) => {
-  const fullName = `${payload.firstName} ${payload.lastName}`;
-  payload.user_name = fullName;
+  const isUserExist = await UserModel.findOne({
+    name: payload.name,
+    fatherName: payload.fatherName,
+    motherName: payload.motherName,
+  });
+  if (isUserExist) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "Same name data already exist");
+  }
   payload.role = "participant";
+  payload.isVerified = true;
   const result = await UserModel.create(payload);
   const jwtPayload: JwtPayload = {
     user: result._id,
-    name: fullName,
+    name: payload.name,
     role: result.role,
     profileImage: result?.profileImage,
     isDeleted: result?.isDeleted,
@@ -44,10 +51,11 @@ const createTripParticipants = async (payload: Partial<IUser>) => {
 };
 
 const joinTrip = async (
+  tripId: string,
   user: JwtPayload,
   payload: { tripId: string; code: string }
 ) => {
-  const { tripId, code } = payload;
+  const { code } = payload;
   const userId = new Types.ObjectId(user.user);
 
   // Start a session for transactional updates

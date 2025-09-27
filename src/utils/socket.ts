@@ -12,6 +12,8 @@ import httpStatus from "http-status";
 import { verifySocketToken } from "./JwtToken";
 import { NotificationModel } from "../modules/Notification/notification.model";
 import { INotification } from "../modules/Notification/notification.interface";
+import { verifyToken } from "./jwt";
+import config from "../config";
 
 const app: Application = express();
 
@@ -74,23 +76,21 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       );
     }
 
-    const userDetails = verifySocketToken(token);
+    const userDetails = verifyToken(token, config.JWT_SECRET_KEY as string);
     if (!userDetails) {
       return next(new Error("Authentication error: Invalid token"));
     }
-
-    const user = await UserModel.findById(userDetails.id).select(
-      "_id user_name email role"
+    const user = await UserModel.findById(userDetails.user).select(
+      "_id name email role"
     );
 
     if (!user) {
       return next(new Error("Authentication error: User not found"));
     }
 
-    // ✅ Only safe info is stored on socket.user
     socket.user = {
       _id: user._id.toString(),
-      name: user.user_name,
+      name: user.name as string,
       email: user.email,
       role: user.role,
     };
@@ -117,6 +117,17 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
     socket.on("userConnected", ({ userId }: { userId: string }) => {
       connectedUsers.set(userId, { socketID: socket.id });
       console.log(`User ${userId} connected with socket ID: ${socket.id}`);
+    });
+
+    // Listen for 'locationRequest' event (this is the real-time data coming from the backend)
+    socket.on("locationRequest", (data) => {
+      const { userId, status } = data;
+
+      // Log the details of the received location request to verify the information
+      console.log("Received Location Request:", {
+        userId,
+        status,
+      });
     });
 
     socket.on("disconnect", () => {
@@ -186,4 +197,52 @@ export const emitNotification = async ({
     adminMsgTittle,
     userMsgTittle,
   });
+};
+
+// Teacher requests location of a specific user
+export const emitLocationRequest = async (userId: string) => {
+  // Ensure Socket.IO is initialized
+  if (!io) {
+    throw new Error("Socket.IO is not initialized");
+  }
+
+  // Find the user's socket connection in the map
+  const userSocket = connectedUsers.get(userId);
+  console.log("SOCEKT", userSocket);
+  if (userSocket) {
+    // Emit location request to the specific user's socket
+    io.to(userSocket.socketID).emit("locationRequest", {
+      userId, // Send the userId to match the request
+      status: "requesting-location", // Custom status for the request
+    });
+
+    console.log(`Location request sent to user ${userId}`);
+  } else {
+    console.log(`User with ID ${userId} is not connected via Socket.IO`);
+  }
+};
+
+export const listenLocationRequest = async (userId: string) => {
+  // Ensure Socket.IO is initialized
+  if (!io) {
+    throw new Error("Socket.IO is not initialized");
+  }
+
+  // Find the user's socket connection in the map
+  const userSocket = connectedUsers.get(userId);
+  console.log("SOCEKT", userSocket);
+  if (userSocket) {
+    // Emit location request to the specific user's socket
+    io.on("locationRequest", (data) => {
+      const { userId, status } = data;
+      return {
+        userId,
+        status,
+      };
+    });
+
+    console.log(`Location request sent to user ${userId}`);
+  } else {
+    console.log(`User with ID ${userId} is not connected via Socket.IO`);
+  }
 };

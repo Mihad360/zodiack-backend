@@ -13,5 +13,6 @@ router.post(
   validateRequest(userZodSchema),
   AdminController.createTeacher
 );
+router.patch("/edit-license/:id", auth("admin"), AdminController.updateLicense);
 
 export const AdminRoutes = router;

@@ -9,7 +9,7 @@ router.post(
   joinedParticipantsControllers.createTripParticipants
 );
 router.post(
-  "/join-trip/",
+  "/join-trip/:tripId",
   auth("participant", "teacher"),
   joinedParticipantsControllers.joinTrip
 );

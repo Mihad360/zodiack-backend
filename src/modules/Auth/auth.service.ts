@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import HttpStatus from "http-status";
 import AppError from "../../errors/AppError";
 import { UserModel } from "../user/user.model";
-import { IAuth } from "./auth.interface";
+import { IAuth, IParticipantLog } from "./auth.interface";
 import { JwtPayload } from "../../interface/global";
 import { createToken } from "../../utils/jwt";
 import config from "../../config";
@@ -34,9 +34,10 @@ const loginUser = async (payload: IAuth) => {
 
   const jwtPayload: JwtPayload = {
     user: userId,
-    name: user.user_name,
+    name: user.name,
     email: user?.email,
     role: user?.role,
+    isLicenseAvailable: user?.isLicenseAvailable,
     profileImage: user?.profileImage,
     isDeleted: user?.isDeleted,
   };
@@ -56,10 +57,60 @@ const loginUser = async (payload: IAuth) => {
     const notInfo: INotification = {
       sender: new Types.ObjectId(userId),
       type: "user_login",
-      message: `User logged in: ${user.user_name} (${user.email})`,
+      message: `User logged in: ${user.name} (${user.email})`,
     };
     await createAdminNotification(notInfo);
   }
+
+  return {
+    role: user.role,
+    accessToken,
+  };
+};
+
+const participantLogin = async (payload: IParticipantLog) => {
+  const user = await UserModel.findOne({
+    name: payload.name,
+    fatherName: payload.fatherName,
+    motherName: payload.motherName,
+  });
+  if (!user) {
+    throw new AppError(HttpStatus.NOT_FOUND, "The user is not found");
+  }
+  if (user?.isDeleted) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "The user is already Blocked");
+  }
+  if (user.name !== payload.name) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "Your name is invalid");
+  }
+  if (user.fatherName !== payload.fatherName) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "Father name is invalid");
+  }
+  if (user.motherName !== payload.motherName) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "Mother name is invalid");
+  }
+
+  const userId = user?._id;
+
+  if (!userId) {
+    throw new AppError(HttpStatus.NOT_FOUND, "The user id is missing");
+  }
+
+  const jwtPayload: JwtPayload = {
+    user: userId,
+    name: user.name,
+    email: user?.email,
+    role: user?.role,
+    isLicenseAvailable: user?.isLicenseAvailable,
+    profileImage: user?.profileImage,
+    isDeleted: user?.isDeleted,
+  };
+
+  const accessToken = createToken(
+    jwtPayload,
+    config.JWT_SECRET_KEY as string,
+    config.JWT_ACCESS_EXPIRES_IN as string
+  );
 
   return {
     role: user.role,
@@ -100,7 +151,7 @@ const forgetPassword = async (email: string) => {
     const mail = await sendEmail(
       user.email,
       subject,
-      verificationEmailTemplate(user.user_name, otp as string)
+      verificationEmailTemplate(user.name as string, otp as string)
     );
     if (!mail.success) {
       throw new AppError(HttpStatus.BAD_REQUEST, "Something went wrong!");
@@ -218,4 +269,5 @@ export const authServices = {
   verifyOtp,
   resetPassword,
   changePassword,
+  participantLogin,
 };

@@ -6,6 +6,7 @@ import { JwtPayload } from "../../interface/global";
 
 const requestLocation = catchAsync(async (req, res) => {
   const id = req.params.id;
+  console.log("lsjfslkj",id);
   const result = await locationServices.requestLocation(id, req.body);
 
   sendResponse(res, {
@@ -28,10 +29,10 @@ const requestLocationsForMultipleStudents = catchAsync(async (req, res) => {
   });
 });
 
-const simulateRedisStorage = catchAsync(async (req, res) => {
+const sendLatLongs = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
   const userId = user.user;
-  const result = await locationServices.simulateRedisStorage(
+  const result = await locationServices.sendLatLongs(
     userId as string,
     req.body
   );
@@ -44,8 +45,15 @@ const simulateRedisStorage = catchAsync(async (req, res) => {
   });
 });
 
-const batchUpdateUserLocations = catchAsync(async (req, res) => {
-  const result = await locationServices.batchUpdateUserLocations();
+const extendTime = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const teacherId = user.user;
+  const userId = req.params.userId;
+  const result = await locationServices.extendTime(
+    teacherId as string,
+    userId,
+    req.body
+  );
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -80,9 +88,9 @@ const getMyLocations = catchAsync(async (req, res) => {
 
 export const locationControllers = {
   requestLocation,
-  simulateRedisStorage,
-  batchUpdateUserLocations,
+  sendLatLongs,
   requestLocationsForMultipleStudents,
   getAllLocations,
   getMyLocations,
+  extendTime,
 };

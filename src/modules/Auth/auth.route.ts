@@ -5,6 +5,7 @@ import auth from "../../middlewares/auth";
 const router = express.Router();
 
 router.post("/login", authControllers.loginUser);
+router.post("/participant-login", authControllers.participantLogin);
 router.post("/forget-password", authControllers.forgetPassword);
 router.post("/reset-password", authControllers.resetPassword);
 router.post("/verify-otp", authControllers.verifyOtp);

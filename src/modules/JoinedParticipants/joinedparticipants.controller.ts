@@ -20,7 +20,8 @@ const createTripParticipants = catchAsync(async (req, res) => {
 
 const joinTrip = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
-  const result = await joinedParticipantsServices.joinTrip(user, req.body);
+  const id = req.params.tripId;
+  const result = await joinedParticipantsServices.joinTrip(id, user, req.body);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

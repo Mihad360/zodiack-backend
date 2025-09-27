@@ -15,7 +15,11 @@ const createTeacher = async (payload: IUser) => {
   if (isUserExist) {
     throw new AppError(HttpStatus.BAD_REQUEST, "The User already exists");
   }
-
+  payload.licenseExpiresAt = new Date();
+  payload.licenseExpiresAt.setFullYear(
+    payload.licenseExpiresAt.getFullYear() + 1
+  );
+  payload.isLicenseAvailable = true;
   payload.role = "teacher";
   // console.log(payload);
   const result = await UserModel.create(payload);
@@ -25,7 +29,7 @@ const createTeacher = async (payload: IUser) => {
       result.email,
       "Verify you credintials by this link",
       loginRequestEmailTemplate(
-        result.user_name,
+        result.name as string,
         result.email,
         payload.password
       )
@@ -68,8 +72,29 @@ const getEachTeacher = async (id: string) => {
   return result;
 };
 
+const updateLicense = async (
+  id: string,
+  payload: { isLicenseAvailable: boolean }
+) => {
+  const isTeacherExist = await UserModel.findById(id);
+  if (!isTeacherExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Teacher not found");
+  }
+  const currentDate = new Date();
+  const result = await UserModel.findByIdAndUpdate(
+    isTeacherExist._id,
+    {
+      licenseExpiresAt: currentDate.setFullYear(currentDate.getFullYear() + 1),
+      isLicenseAvailable: payload.isLicenseAvailable,
+    },
+    { new: true }
+  );
+  return result;
+};
+
 export const AdminServices = {
   createTeacher,
   getAllTeachers,
   getEachTeacher,
+  updateLicense,
 };
