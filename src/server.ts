@@ -51,7 +51,7 @@ async function main() {
     // Initialize Socket.IO
     initSocketIO(server);
 
-    cron.schedule("* * * * *", async () => {
+    cron.schedule("0 0 * * *", async () => {
       const currentDate = new Date();
       const currentDateString = currentDate.toISOString()?.split("T")[0]; // Format the current date as YYYY-MM-DD
 

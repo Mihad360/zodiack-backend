@@ -1,8 +1,9 @@
+import { locationServices } from "./../modules/Location/location.service";
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 import { UserModel } from "../modules/user/user.model"; // User model
 
@@ -14,6 +15,8 @@ import { NotificationModel } from "../modules/Notification/notification.model";
 import { INotification } from "../modules/Notification/notification.interface";
 import { verifyToken } from "./jwt";
 import config from "../config";
+import { LocationModel } from "../modules/Location/location.model";
+import { ILocationTrack } from "../modules/Location/location.interface";
 
 const app: Application = express();
 
@@ -130,6 +133,16 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       });
     });
 
+    socket.on("locationUpdated", (data) => {
+      const { userId, status } = data;
+
+      // Log the details of the received location request to verify the information
+      console.log("Received Location Request:", {
+        userId,
+        status,
+      });
+    });
+
     socket.on("disconnect", () => {
       console.log(
         `${socket.user?.name} || ${socket.user?.email} || ${socket.user?._id} just disconnected with socket ID: ${socket.id}`
@@ -222,27 +235,23 @@ export const emitLocationRequest = async (userId: string) => {
   }
 };
 
-export const listenLocationRequest = async (userId: string) => {
-  // Ensure Socket.IO is initialized
-  if (!io) {
-    throw new Error("Socket.IO is not initialized");
-  }
-
-  // Find the user's socket connection in the map
-  const userSocket = connectedUsers.get(userId);
-  console.log("SOCEKT", userSocket);
-  if (userSocket) {
-    // Emit location request to the specific user's socket
-    io.on("locationRequest", (data) => {
-      const { userId, status } = data;
-      return {
-        userId,
-        status,
-      };
-    });
-
-    console.log(`Location request sent to user ${userId}`);
-  } else {
-    console.log(`User with ID ${userId} is not connected via Socket.IO`);
+export const emitLocationLatLong = async (data: any) => {
+  try {
+    const userSocket = connectedUsers.get(data.userId?.toString());
+    console.log(userSocket);
+    if (userSocket) {
+      io.to(userSocket.socketID).emit("locationUpdated", {
+        userId: data.userId,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        isTrackingEnabled: data.isTrackingEnabled,
+        time: data.time,
+      });
+      console.log("doneee");
+    } else {
+      console.log(`User ${data.userId} is not connected.`);
+    }
+  } catch (error) {
+    console.error("Error in location update:", error);
   }
 };

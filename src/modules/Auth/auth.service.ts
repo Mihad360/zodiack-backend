@@ -25,6 +25,9 @@ const loginUser = async (payload: IAuth) => {
   if (!(await UserModel.compareUserPassword(payload.password, user.password))) {
     throw new AppError(HttpStatus.FORBIDDEN, "Password did not matched");
   }
+  if (!user.isLicenseAvailable) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "License unavailable");
+  }
 
   const userId = user?._id;
 
@@ -45,7 +48,7 @@ const loginUser = async (payload: IAuth) => {
   const accessToken = createToken(
     jwtPayload,
     config.JWT_SECRET_KEY as string,
-    config.JWT_ACCESS_EXPIRES_IN as string
+    config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
   );
 
   if (accessToken && !user.isVerified) {

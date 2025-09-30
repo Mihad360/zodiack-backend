@@ -9,31 +9,31 @@ import LocationStorage from "../../utils/locationStorage";
 import { UserModel } from "../user/user.model";
 import { TripModel } from "../Trip/trip.model";
 import { JwtPayload } from "../../interface/global";
-import { emitLocationRequest } from "../../utils/socket";
-
+import { emitLocationLatLong, emitLocationRequest } from "../../utils/socket";
 
 const requestLocation = async (
   id: string | Types.ObjectId,
   payload: ILocationTrack
 ) => {
-  // Ensure that the userId is converted to a valid ObjectId
   const userId = new Types.ObjectId(id);
+
+  // Check if the user exists
   const isUserExist = await UserModel.findById(userId);
   if (!isUserExist) {
     throw new AppError(HttpStatus.NOT_FOUND, "User not found");
   }
 
   try {
-    // Fetch the location using ObjectId (make sure id is a valid ObjectId)
     let location = await LocationModel.findOne({
-      userId: new Types.ObjectId(id),
+      userId: userId,
     });
 
+    // If location does not exist, create a new one
     if (!location) {
-      // If location doesn't exist, create a new one with tracking enabled
       payload.userId = userId;
       payload.isTrackingEnabled = true;
-      payload.time = new Date(Date.now() + 10 * 60 * 1000); // Default to enabling tracking
+      payload.time = new Date(Date.now() + 10 * 60 * 1000); // Set expiration time
+
       location = await LocationModel.create(payload);
 
       if (!location) {
@@ -42,27 +42,28 @@ const requestLocation = async (
           "Failed to create location."
         );
       }
-      // Emit location request to the user
-      await emitLocationRequest(id as string);
-      
+
+      // Emit location request to frontend (i.e., start tracking)
+      await emitLocationRequest(userId.toString());
+
       return location;
     } else {
-      // Save the updated location
-      const updateLoc = await LocationModel.findByIdAndUpdate(
+      // If location already exists, update it with the new lat/lon
+      const updatedLocation = await LocationModel.findByIdAndUpdate(
         location._id,
         {
           latitude: payload.latitude,
           longitude: payload.longitude,
           isTrackingEnabled: true,
+          time: new Date(Date.now() + 10 * 60 * 1000),
         },
         { new: true }
       );
-      console.log("kljflkfj", userId);
 
-      // Emit location request to the user
+      // Emit location update request to frontend
       await emitLocationRequest(userId.toString());
 
-      return updateLoc;
+      return updatedLocation;
     }
   } catch (error) {
     throw new AppError(
@@ -79,16 +80,14 @@ const requestLocationsForMultipleStudents = async (tripId: string) => {
     throw new AppError(HttpStatus.NOT_FOUND, "Trip not found");
   }
 
-  // Loop through each student in the trip and request their location
   const studentIds = trip.participants; // Assume participants is an array of student userIds
   const locations = [];
 
   for (const studentId of studentIds as Types.ObjectId[]) {
     const id = studentId as Types.ObjectId | string | undefined;
 
-    // Check if id is undefined before calling the requestLocation function
     if (id === undefined) {
-      continue; // Skip this iteration if id is undefined
+      continue; // Skip if ID is undefined
     }
 
     const location = await requestLocation(id, {
@@ -119,42 +118,27 @@ const sendLatLongs = async (userId: string, payload: ILocationTrack) => {
         "Location not found for the user"
       );
     }
-    console.log(location.tracking?.length);
 
-    // Check if tracking time has exceeded the time limit
     const currentTime = new Date();
 
+    // If the current time exceeds the allowed tracking time, stop tracking
     if (currentTime >= location.time) {
-      location.isTrackingEnabled = false; // Disable further tracking
-      await location.save(); // Save the updated location to reflect tracking is stopped
-      return { message: "location tracking has stopped" }; // Early return to stop the update
+      location.isTrackingEnabled = false;
+      await location.save();
+      return { message: "Location tracking has stopped" }; // Early exit
     }
 
-    if (location.tracking && location.tracking.length > 100) {
-      location.tracking = []; // Remove the oldest entry if the array exceeds 100
-    }
-
-    // Push the new latitude and longitude into the tracking array
-    location?.tracking?.push({
-      userId: userObjectId,
-      latitude: payload.latitude,
-      longitude: payload.longitude,
-      time: new Date(),
-    });
-
-    // Update the current location with the new latitude and longitude
+    // Update the location with the new lat/lon
     location.latitude = payload.latitude;
     location.longitude = payload.longitude;
+    location.time = new Date(Date.now() + 10 * 60 * 1000); // Extend the expiration time
 
-    // Save the updated location data
-    await location.save();
+    await location.save(); // Save the updated location
 
-    console.log(`Location for user ${userId} updated successfully`);
+    // Emit updated location back to frontend
+    await emitLocationLatLong(location as any);
 
-    // Optionally, log the updated tracking data
-    console.log("Updated tracking array:", location.tracking);
-
-    return location; // Return the updated location document
+    return location; // Return the updated location
   } catch (error) {
     console.error("Error in sendLatLongs:", error);
     throw new AppError(
