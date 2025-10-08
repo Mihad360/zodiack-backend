@@ -46,11 +46,8 @@ const sendLatLongs = catchAsync(async (req, res) => {
 });
 
 const extendTime = catchAsync(async (req, res) => {
-  const user = req.user as JwtPayload;
-  const teacherId = user.user;
   const userId = req.params.userId;
   const result = await locationServices.extendTime(
-    teacherId as string,
     userId,
     req.body
   );

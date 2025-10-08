@@ -2,9 +2,13 @@ import HttpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { CallServices } from "./calls.service";
+import { JwtPayload } from "../../interface/global";
 
 const createCall = catchAsync(async (req, res) => {
-  const result = await CallServices.createCall();
+  const user = req.user as JwtPayload;
+  const id = req.params.receiverId;
+
+  const result = await CallServices.createCall(user.user as string, id);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -13,8 +17,9 @@ const createCall = catchAsync(async (req, res) => {
     data: result,
   });
 });
-const getAllCallBySpeceficMessage = catchAsync(async (req, res) => {
-  const result = await CallServices.getAllCallBySpeceficMessage();
+const acceptCall = catchAsync(async (req, res) => {
+  const callId = req.params.callId;
+  const result = await CallServices.acceptCall(callId);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -23,8 +28,9 @@ const getAllCallBySpeceficMessage = catchAsync(async (req, res) => {
     data: result,
   });
 });
-const getEachCallMessage = catchAsync(async (req, res) => {
-  const result = await CallServices.getEachCallMessage();
+const declineCall = catchAsync(async (req, res) => {
+  const callId = req.params.callId;
+  const result = await CallServices.declineCall(callId);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -46,7 +52,7 @@ const deleteCall = catchAsync(async (req, res) => {
 
 export const CallControllers = {
   createCall,
-  getAllCallBySpeceficMessage,
-  getEachCallMessage,
+  acceptCall,
+  declineCall,
   deleteCall,
 };

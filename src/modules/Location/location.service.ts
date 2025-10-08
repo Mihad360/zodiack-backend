@@ -131,7 +131,7 @@ const sendLatLongs = async (userId: string, payload: ILocationTrack) => {
     // Update the location with the new lat/lon
     location.latitude = payload.latitude;
     location.longitude = payload.longitude;
-    location.time = new Date(Date.now() + 10 * 60 * 1000); // Extend the expiration time
+    // location.time = new Date(Date.now() + 10 * 60 * 1000); // Extend the expiration time
 
     await location.save(); // Save the updated location
 
@@ -150,7 +150,6 @@ const sendLatLongs = async (userId: string, payload: ILocationTrack) => {
 };
 
 const extendTime = async (
-  teacherId: string,
   userId: string,
   payload: { time: string | number }
 ) => {

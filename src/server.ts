@@ -9,6 +9,7 @@ import { initSocketIO } from "./utils/socket";
 import cron from "node-cron";
 import { UserModel } from "./modules/user/user.model";
 import { TripModel } from "./modules/Trip/trip.model";
+import dayjs from "dayjs";
 
 let server: HttpServer;
 
@@ -86,6 +87,57 @@ async function main() {
       }
 
       console.log("Checked and updated completed trips.");
+    });
+
+    cron.schedule("* * * * *", async () => {
+      try {
+        console.log("Checking trips status...");
+
+        // Get all trips that are not deleted
+        const trips = await TripModel.find({ isDeleted: false });
+
+        // Current time for comparison
+        const currentTime = dayjs();
+
+        for (const trip of trips) {
+          const tripStartTime = dayjs(`${trip.trip_date} ${trip.trip_time}`);
+          const tripEndTime = dayjs(`${trip.trip_date} ${trip.end_time}`);
+
+          if (currentTime.isAfter(tripEndTime)) {
+            // Trip has ended, set status to "completed"
+            if (trip.status !== "completed") {
+              trip.status = "completed";
+              await trip.save();
+              console.log(
+                `Trip "${trip.trip_name}" status updated to "completed".`
+              );
+            }
+          } else if (
+            currentTime.isAfter(tripStartTime) &&
+            currentTime.isBefore(tripEndTime)
+          ) {
+            // Trip is ongoing, set status to "ongoing"
+            if (trip.status !== "ongoing") {
+              trip.status = "ongoing";
+              await trip.save();
+              console.log(
+                `Trip "${trip.trip_name}" status updated to "ongoing".`
+              );
+            }
+          } else if (currentTime.isBefore(tripStartTime)) {
+            // Trip is still planned, no status change needed
+            if (trip.status !== "planned") {
+              trip.status = "planned";
+              await trip.save();
+              console.log(
+                `Trip "${trip.trip_name}" status updated to "planned".`
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error updating trip statuses:", error);
+      }
     });
 
     await Promise.all([seedSuperAdmin()]);

@@ -9,7 +9,7 @@ const router = express.Router();
 router.get("/recent-groups", auth("admin"), tripControllers.mostRecentTrips);
 router.get(
   "/:id/trip-participants",
-  auth("admin"),
+  auth("admin", "teacher"),
   tripControllers.getEachTripParticipants
 );
 router.get("/:id", auth("participant"), tripControllers.getEachTrip);

@@ -37,12 +37,6 @@ const auth = (...requiredRoles: TUserRole[]) => {
     console.log(decoded);
     const { role, email, iat } = decoded;
 
-    // // Skip all checks if role is 'student'
-    // if (role === "participant") {
-    //   req.user = decoded as StudentJwtPayload;
-    //   return next();
-    // }
-
     // Proceed with other checks for non-student roles
     const user = await UserModel.isUserExistByEmail(email);
     if (!user) {

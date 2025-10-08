@@ -5,19 +5,9 @@ import auth from "../../middlewares/auth";
 const router = express.Router();
 
 router.get(
-  "/admin",
-  auth("admin"),
-  notificationControllers.getAllAdminNotification
-);
-router.get(
-  "/teacher",
-  auth("teacher"),
-  notificationControllers.getTeacherNotifications
-);
-router.get(
-  "/participant",
-  auth("teacher", "participant"),
-  notificationControllers.getParticipantNotifications
+  "/",
+  auth("admin", "participant", "teacher"),
+  notificationControllers.getMyNotifications
 );
 router.put(
   "/:id",

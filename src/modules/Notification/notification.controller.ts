@@ -4,9 +4,9 @@ import sendResponse from "../../utils/sendResponse";
 import { notificationServices } from "./notification.service";
 import { JwtPayload } from "../../interface/global";
 
-const getAllAdminNotification = catchAsync(async (req, res) => {
+const getMyNotifications = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
-  const result = await notificationServices.getAllAdminNotification(user);
+  const result = await notificationServices.getMyNotifications(user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
@@ -15,28 +15,7 @@ const getAllAdminNotification = catchAsync(async (req, res) => {
     data: result,
   });
 });
-const getTeacherNotifications = catchAsync(async (req, res) => {
-  const user = req.user as JwtPayload;
-  const result = await notificationServices.getTeacherNotifications(user);
 
-  sendResponse(res, {
-    statusCode: HttpStatus.OK,
-    success: true,
-    message: "Notification successfully",
-    data: result,
-  });
-});
-const getParticipantNotifications = catchAsync(async (req, res) => {
-  const user = req.user as JwtPayload;
-  const result = await notificationServices.getParticipantNotifications(user);
-
-  sendResponse(res, {
-    statusCode: HttpStatus.OK,
-    success: true,
-    message: "Notification successfully",
-    data: result,
-  });
-});
 const updateNotification = catchAsync(async (req, res) => {
   const id = req.params.id;
   const result = await notificationServices.updateNotification(id);
@@ -50,8 +29,6 @@ const updateNotification = catchAsync(async (req, res) => {
 });
 
 export const notificationControllers = {
-  getAllAdminNotification,
-  getTeacherNotifications,
   updateNotification,
-  getParticipantNotifications,
+  getMyNotifications,
 };

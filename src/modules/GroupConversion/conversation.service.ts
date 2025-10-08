@@ -1,55 +1,68 @@
 import HttpStatus from "http-status";
 import { Types } from "mongoose";
 import { JwtPayload } from "../../interface/global";
-import { IConversation } from "./conversation.interface";
 import { ConversationModel } from "./conversation.model";
 import AppError from "../../errors/AppError";
 import { UserModel } from "../user/user.model";
 import { TripModel } from "../Trip/trip.model";
 
-const createConversation = async (payload: IConversation) => {
-  return payload;
-};
-const getAllStudentConversation = async (user: JwtPayload) => {
+const getMyConversation = async (user: JwtPayload) => {
   const userId = new Types.ObjectId(user.user);
-  const isPartExist = await TripModel.findOne({ participants: userId });
-  if (!isPartExist) {
-    throw new AppError(HttpStatus.NOT_FOUND, "Participant not exist");
+
+  // Check the role of the user
+  if (user.role === "participant") {
+    // For students: Find if the student is a participant in any trip
+    const isPartExist = await TripModel.findOne({ participants: userId });
+    if (!isPartExist) {
+      throw new AppError(HttpStatus.NOT_FOUND, "Participant not exist");
+    }
+
+    // Find the student's conversations for the trip
+    const isConversationsExist = await ConversationModel.find({
+      user: userId,
+      trip_id: isPartExist._id,
+    }).populate({
+      path: "teacher",
+      select: "name profileImage role updatedAt isActive",
+    });
+
+    if (!isConversationsExist || isConversationsExist.length === 0) {
+      throw new AppError(HttpStatus.NOT_FOUND, "Conversation not exist");
+    }
+
+    return isConversationsExist;
   }
-  const isConversationsExist = await ConversationModel.find({
-    user: userId,
-    trip_id: isPartExist._id,
-  }).populate({
-    path: "teacher",
-    select: "name profileImage role updatedAt isActive",
-  });
-  if (!isConversationsExist) {
-    throw new AppError(HttpStatus.NOT_FOUND, "Conversation not exist");
+
+  if (user.role === "teacher") {
+    // For teachers: Find the trip created by the teacher
+    const isPartExist = await UserModel.findById(userId);
+    if (!isPartExist) {
+      throw new AppError(HttpStatus.NOT_FOUND, "Participant not exist");
+    }
+    const isTripExist = await TripModel.findOne({ createdBy: userId });
+    if (!isTripExist) {
+      throw new AppError(HttpStatus.NOT_FOUND, "Trip not found");
+    }
+
+    // Find the teacher's conversations
+    const isConversationsExist = await ConversationModel.find({
+      teacher: userId,
+    }).populate({
+      path: "user",
+      select: "name profileImage role updatedAt isActive",
+    });
+
+    if (!isConversationsExist || isConversationsExist.length === 0) {
+      throw new AppError(HttpStatus.NOT_FOUND, "Conversation not exist");
+    }
+
+    return isConversationsExist;
   }
-  return isConversationsExist;
+
+  // If the user's role is neither student nor teacher
+  throw new AppError(HttpStatus.FORBIDDEN, "Invalid role");
 };
 
-const getAllTeacherConversation = async (user: JwtPayload) => {
-  const userId = new Types.ObjectId(user.user);
-  const isPartExist = await UserModel.findById(userId);
-  if (!isPartExist) {
-    throw new AppError(HttpStatus.NOT_FOUND, "Participant not exist");
-  }
-  const isTripExist = await TripModel.findOne({ createdBy: userId });
-  if (!isTripExist) {
-    throw new AppError(HttpStatus.NOT_FOUND, "Participant not exist");
-  }
-  const isConversationsExist = await ConversationModel.find({
-    teacher: userId,
-  }).populate({
-    path: "user",
-    select: "name profileImage role updatedAt isActive",
-  });
-  if (!isConversationsExist) {
-    throw new AppError(HttpStatus.NOT_FOUND, "Conversation not exist");
-  }
-  return isConversationsExist;
-};
 const getEachConversation = async (id: string) => {
   const isConversationExist = await ConversationModel.findById(id)
     .populate({
@@ -66,14 +79,8 @@ const getEachConversation = async (id: string) => {
   }
   return isConversationExist;
 };
-const updateConversation = async () => {};
-const deleteConversation = async () => {};
 
 export const conversationServices = {
-  createConversation,
-  getAllStudentConversation,
   getEachConversation,
-  updateConversation,
-  deleteConversation,
-  getAllTeacherConversation,
+  getMyConversation,
 };

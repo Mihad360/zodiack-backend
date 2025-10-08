@@ -193,7 +193,24 @@ const verifyOtp = async (payload: { email: string; otp: string }) => {
     );
   }
   const check = await checkOtp(payload.email, payload.otp);
-  return check;
+  if (check) {
+    const jwtPayload: JwtPayload = {
+      user: user._id,
+      name: user.name,
+      email: user?.email,
+      role: user?.role,
+      isLicenseAvailable: user?.isLicenseAvailable,
+      profileImage: user?.profileImage,
+      isDeleted: user?.isDeleted,
+    };
+
+    const accessToken = createToken(
+      jwtPayload,
+      config.JWT_SECRET_KEY as string,
+      "5m"
+    );
+    return { accessToken };
+  }
 };
 
 const resetPassword = async (payload: {
@@ -210,8 +227,15 @@ const resetPassword = async (payload: {
   if (user?.isDeleted) {
     throw new AppError(HttpStatus.FORBIDDEN, "This User is deleted");
   }
-  if (!user.isVerified) {
-    throw new AppError(HttpStatus.BAD_REQUEST, "You are not verified");
+  // Check if password was changed recently (within the last 5 minutes)
+  const passwordChangedAt = user.passwordChangedAt;
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes in milliseconds
+
+  if (passwordChangedAt && passwordChangedAt > fiveMinutesAgo) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Password was recently changed. Please try again after 5 minutes."
+    );
   }
 
   const newHashedPassword = await UserModel.newHashedPassword(

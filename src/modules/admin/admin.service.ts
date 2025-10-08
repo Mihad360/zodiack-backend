@@ -45,7 +45,7 @@ const createTeacher = async (payload: IUser) => {
 
 const getAllTeachers = async (query: Record<string, unknown>) => {
   const teachersQuery = new QueryBuilder(
-    UserModel.find({ isDeleted: false }),
+    UserModel.find({ isDeleted: false, role: "teacher" }),
     query
   )
     .search(searchTeachers)

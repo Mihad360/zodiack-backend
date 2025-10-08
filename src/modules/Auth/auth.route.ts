@@ -7,7 +7,11 @@ const router = express.Router();
 router.post("/login", authControllers.loginUser);
 router.post("/participant-login", authControllers.participantLogin);
 router.post("/forget-password", authControllers.forgetPassword);
-router.post("/reset-password", authControllers.resetPassword);
+router.post(
+  "/reset-password",
+  auth("admin", "teacher"),
+  authControllers.resetPassword
+);
 router.post("/verify-otp", authControllers.verifyOtp);
 router.post(
   "/change-password",
