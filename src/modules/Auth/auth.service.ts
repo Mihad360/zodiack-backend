@@ -156,10 +156,10 @@ const forgetPassword = async (email: string) => {
       subject,
       verificationEmailTemplate(user.name as string, otp as string)
     );
-    if (!mail.success) {
+    if (!mail) {
       throw new AppError(HttpStatus.BAD_REQUEST, "Something went wrong!");
     }
-    return mail;
+    return 
   } else {
     throw new AppError(HttpStatus.BAD_REQUEST, "Something went wrong!");
   }
