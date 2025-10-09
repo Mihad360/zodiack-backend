@@ -249,7 +249,24 @@ const resetPassword = async (payload: {
     },
     { new: true }
   );
-  return updateUser;
+  if (updateUser) {
+    const jwtPayload: JwtPayload = {
+      user: user._id,
+      name: user.name,
+      email: user?.email,
+      role: user?.role,
+      isLicenseAvailable: user?.isLicenseAvailable,
+      profileImage: user?.profileImage,
+      isDeleted: user?.isDeleted,
+    };
+
+    const accessToken = createToken(
+      jwtPayload,
+      config.JWT_SECRET_KEY as string,
+      config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
+    );
+    return { accessToken };
+  }
 };
 
 const changePassword = async (
@@ -287,7 +304,24 @@ const changePassword = async (
   if (!result) {
     throw new AppError(HttpStatus.UNAUTHORIZED, "Something went wrong");
   }
-  return { message: "Change password successfull" };
+  if (result) {
+    const jwtPayload: JwtPayload = {
+      user: user._id,
+      name: user.name,
+      email: user?.email,
+      role: user?.role,
+      isLicenseAvailable: user?.isLicenseAvailable,
+      profileImage: user?.profileImage,
+      isDeleted: user?.isDeleted,
+    };
+
+    const accessToken = createToken(
+      jwtPayload,
+      config.JWT_SECRET_KEY as string,
+      config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
+    );
+    return { accessToken };
+  }
 };
 
 export const authServices = {

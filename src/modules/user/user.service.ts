@@ -11,7 +11,10 @@ import { searchUsers } from "./user.const";
 
 const getUsers = async (query: Record<string, unknown>) => {
   const userQuery = new QueryBuilder(
-    UserModel.find({ isDeleted: false }),
+    UserModel.find(
+      { isDeleted: false },
+      "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt"
+    ),
     query
   )
     .search(searchUsers)
@@ -70,6 +73,8 @@ const editUserProfile = async (
     id,
     { $set: updateData },
     { new: true }
+  ).select(
+    "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt -fatherName -motherName"
   );
   return updatedUser;
 };

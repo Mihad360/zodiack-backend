@@ -9,12 +9,14 @@ import { JoinedParticipantsModel } from "../JoinedParticipants/joinedparticipant
 
 const getTripsByTeacher = async (userId: string) => {
   const id = new Types.ObjectId(userId);
-  const trips = await TripModel.find({ createdBy: id, isDeleted: false })
-    .populate({
-      path: "createdBy",
-      select: "-password",
-    })
-    .populate("participants");
+  const trips = await TripModel.find({
+    createdBy: id,
+    isDeleted: false,
+  }).populate({
+    path: "participants",
+    select:
+      "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt",
+  });
 
   return trips;
 };

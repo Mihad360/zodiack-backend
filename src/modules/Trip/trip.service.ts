@@ -107,8 +107,16 @@ const getEachTripParticipants = async (
 
 const mostRecentTrips = async () => {
   const result = await TripModel.find({ isDeleted: false })
-    .populate({ path: "createdBy", select: "-password" })
-    .populate("participants")
+    .populate({
+      path: "createdBy",
+      select:
+        "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt",
+    })
+    .populate({
+      path: "participants",
+      select:
+        "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt",
+    })
     .sort({ createdAt: -1 })
     .limit(5);
   return result;

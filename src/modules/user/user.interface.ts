@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Model } from "mongoose";
 
 export interface IUser {
@@ -21,6 +22,7 @@ export interface IUser {
   isDeleted?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  [key: string]: any;
 }
 
 export interface User extends Model<IUser> {

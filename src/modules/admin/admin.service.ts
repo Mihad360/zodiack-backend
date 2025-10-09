@@ -45,7 +45,10 @@ const createTeacher = async (payload: IUser) => {
 
 const getAllTeachers = async (query: Record<string, unknown>) => {
   const teachersQuery = new QueryBuilder(
-    UserModel.find({ isDeleted: false, role: "teacher" }),
+    UserModel.find(
+      { isDeleted: false, role: "teacher" },
+      "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt"
+    ),
     query
   )
     .search(searchTeachers)
@@ -65,7 +68,9 @@ const getAllTeachers = async (query: Record<string, unknown>) => {
 };
 
 const getEachTeacher = async (id: string) => {
-  const result = await UserModel.findById(id);
+  const result = await UserModel.findById(id).select(
+    "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt"
+  );
   if (!result) {
     throw new AppError(HttpStatus.NOT_FOUND, "Teacher not found");
   }
