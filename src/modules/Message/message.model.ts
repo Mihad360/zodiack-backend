@@ -18,17 +18,12 @@ const messageSchema = new Schema<IMessage>(
       type: [Schema.Types.ObjectId],
       ref: "Attachment", // Dynamically decide the reference model
     },
-    // receiver_id: {
-    //   type: Schema.Types.ObjectId,
-    //   required: true,
-    //   refPath: "receiver_type", // Dynamically decide the reference model for receiver
-    // },
     msg: {
       type: String,
     },
     msgType: {
       type: String,
-      enum: ["text", "attachments", "call"],
+      enum: ["text", "attachments"],
     },
     is_read: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },

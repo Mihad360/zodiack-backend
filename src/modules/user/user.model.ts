@@ -67,4 +67,8 @@ userSchema.statics.isOldTokenValid = async function (
   return passwordLastChangedAt > jwtIssuedAtInSeconds;
 };
 
+userSchema.statics.isUserExistByCustomId = async function (email: string) {
+  return await UserModel.findOne({ email }).select("-password");
+};
+
 export const UserModel = model<IUser, User>("User", userSchema);

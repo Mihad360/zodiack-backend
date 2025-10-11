@@ -6,13 +6,20 @@ import { JwtPayload } from "../../interface/global";
 
 const loginUser = catchAsync(async (req, res) => {
   const result = await authServices.loginUser(req.body);
-  const { accessToken, role } = result;
+  const { accessToken, refreshToken, role } = result;
 
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: true,
     sameSite: "none",
-    maxAge: 365 * 60 * 60 * 7,
+    // maxAge: 365 * 60 * 60 * 7,
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    // maxAge: 365 * 60 * 60 * 7,
   });
 
   sendResponse(res, {
@@ -22,6 +29,7 @@ const loginUser = catchAsync(async (req, res) => {
     data: {
       role,
       accessToken,
+      refreshToken,
     },
   });
 });
@@ -93,6 +101,18 @@ const changePassword = catchAsync(async (req, res) => {
   });
 });
 
+const refreshToken = catchAsync(async (req, res) => {
+  const { refreshToken } = req.cookies;
+  const result = await authServices.refreshToken(refreshToken);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "refresh token created succesfully",
+    data: result,
+  });
+});
+
 export const authControllers = {
   loginUser,
   forgetPassword,
@@ -100,4 +120,5 @@ export const authControllers = {
   resetPassword,
   changePassword,
   participantLogin,
+  refreshToken,
 };

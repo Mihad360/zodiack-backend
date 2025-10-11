@@ -9,7 +9,6 @@ import config from "../../config";
 import { JwtPayload } from "../../interface/global";
 import { ConversationModel } from "../GroupConversion/conversation.model";
 import { UserModel } from "../user/user.model";
-import { IUser } from "../user/user.interface";
 import { JoinedParticipantsModel } from "./joinedparticipants.model";
 import mongoose, { Types } from "mongoose";
 import { ITrip } from "../Trip/trip.interface";
@@ -17,23 +16,34 @@ import { IJoinedParticipants } from "./joinedparticipants.interface";
 import { INotification } from "../Notification/notification.interface";
 import { createTripJoinNotification } from "../Notification/notification.utils";
 
-const createTripParticipants = async (payload: Partial<IUser>) => {
+const createTripParticipants = async (payload: {
+  firstName: string;
+  lastName: string;
+  fatherName: string;
+  motherName: string;
+}) => {
+  const userName = `${payload.firstName} ${payload.lastName}`;
   const isUserExist = await UserModel.findOne({
-    name: payload.name,
+    name: userName,
     fatherName: payload.fatherName,
     motherName: payload.motherName,
   });
   if (isUserExist) {
     throw new AppError(HttpStatus.BAD_REQUEST, "Same name data already exist");
   }
-  payload.role = "participant";
-  payload.isVerified = true;
-  const result = await UserModel.create(payload);
-  const jwtPayload: JwtPayload = {
+  const result = await UserModel.create({
+    name: userName,
+    fatherName: payload.fatherName,
+    motherName: payload.motherName,
+    role: "participant",
+    isVerified: true,
+  });
+  const jwtPayload = {
     user: result._id,
-    name: payload.name,
+    name: result.name,
     role: result.role,
-    profileImage: result?.profileImage,
+    fatherName: result.fatherName,
+    motherName: result.motherName,
     isDeleted: result?.isDeleted,
   };
   const accessToken = jwt.sign(jwtPayload, config.JWT_SECRET_KEY as string, {
@@ -46,7 +56,6 @@ const createTripParticipants = async (payload: Partial<IUser>) => {
   return {
     role: result.role,
     accessToken,
-    data: result,
   };
 };
 

@@ -1,10 +1,11 @@
+import { JwtPayload as jwtpayload } from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import HttpStatus from "http-status";
 import AppError from "../../errors/AppError";
 import { UserModel } from "../user/user.model";
 import { IAuth, IParticipantLog } from "./auth.interface";
 import { JwtPayload } from "../../interface/global";
-import { createToken } from "../../utils/jwt";
+import { createToken, verifyToken } from "../../utils/jwt";
 import config from "../../config";
 import { sendEmail } from "../../utils/sendEmail";
 import { Types } from "mongoose";
@@ -51,12 +52,18 @@ const loginUser = async (payload: IAuth) => {
     config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
   );
 
-  if (accessToken && !user.isVerified) {
+  const refreshToken = createToken(
+    jwtPayload,
+    config.jwt_refresh_secret as string,
+    config.JWT_REFRESH_EXPIRES_IN_FOR_TEACHER as string
+  );
+
+  if (accessToken && refreshToken && !user.isVerified) {
     await UserModel.findByIdAndUpdate(userId, {
       isVerified: true,
     });
   }
-  if (accessToken && user.isVerified) {
+  if (accessToken && refreshToken && user.isVerified) {
     const notInfo: INotification = {
       sender: new Types.ObjectId(userId),
       type: "user_login",
@@ -68,6 +75,7 @@ const loginUser = async (payload: IAuth) => {
   return {
     role: user.role,
     accessToken,
+    refreshToken,
   };
 };
 
@@ -159,7 +167,7 @@ const forgetPassword = async (email: string) => {
     if (!mail) {
       throw new AppError(HttpStatus.BAD_REQUEST, "Something went wrong!");
     }
-    return 
+    return;
   } else {
     throw new AppError(HttpStatus.BAD_REQUEST, "Something went wrong!");
   }
@@ -324,6 +332,49 @@ const changePassword = async (
   }
 };
 
+const refreshToken = async (token: string) => {
+  const decoded = verifyToken(
+    token,
+    config.jwt_refresh_secret as string
+  ) as jwtpayload;
+  const { email, iat } = decoded;
+  const user = await UserModel.isUserExistByCustomId(email);
+  if (!user) {
+    throw new AppError(HttpStatus.NOT_FOUND, "This User is not exist");
+  }
+  // checking if the user is already deleted
+  if (user?.isDeleted) {
+    throw new AppError(HttpStatus.FORBIDDEN, "This User is deleted");
+  }
+  if (
+    user.passwordChangedAt &&
+    (await UserModel.isOldTokenValid(user.passwordChangedAt, iat as number))
+  ) {
+    throw new AppError(HttpStatus.UNAUTHORIZED, "You are not authorized");
+  }
+
+  const jwtPayload: JwtPayload = {
+    user: user._id as string,
+    name: user.name,
+    email: user?.email,
+    role: user?.role,
+    isLicenseAvailable: user?.isLicenseAvailable,
+    profileImage: user?.profileImage,
+    isDeleted: user?.isDeleted,
+  };
+
+  const accessToken = createToken(
+    jwtPayload,
+    config.JWT_SECRET_KEY as string,
+    config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
+  );
+
+  return {
+    role: user.role,
+    accessToken,
+  };
+};
+
 export const authServices = {
   loginUser,
   forgetPassword,
@@ -331,4 +382,5 @@ export const authServices = {
   resetPassword,
   changePassword,
   participantLogin,
+  refreshToken,
 };

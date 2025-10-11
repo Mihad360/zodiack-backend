@@ -36,4 +36,9 @@ export interface User extends Model<IUser> {
     passwordChangedTime: Date,
     jwtIssuedTime: number
   ) => Promise<boolean>;
+  isJwtIssuedBeforePasswordChange(
+    passwordChangeTimeStamp: Date,
+    jwtIssuedTimeStamp: number
+  ): boolean;
+  isUserExistByCustomId(email: string): Promise<IUser>;
 }

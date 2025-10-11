@@ -7,8 +7,12 @@ export default {
   local_url: process.env.LOCAL_URL,
   DATABASE_URL: process.env.DATABASE_URL,
   JWT_SECRET_KEY: process.env.JWT_SECRET_KEY,
+  jwt_refresh_secret: process.env.JWT_REFRESH_KEY,
   JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN,
-  JWT_ACCESS_EXPIRES_IN_FOR_TEACHER: process.env.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER,
+  JWT_ACCESS_EXPIRES_IN_FOR_TEACHER:
+    process.env.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER,
+  JWT_REFRESH_EXPIRES_IN_FOR_TEACHER:
+    process.env.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER,
   Nodemailer_GMAIL: process.env.Nodemailer_GMAIL,
   Nodemailer_GMAIL_PASSWORD: process.env.Nodemailer_GMAIL_PASSWORD,
   UPLOAD_FOLDER: process.env.UPLOAD_FOLDER,
