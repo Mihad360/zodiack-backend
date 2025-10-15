@@ -11,10 +11,11 @@ const getMyConversation = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Conversation successfully",
+    message: "Conversations retrieved successfully",
     data: result,
   });
 });
+
 const getEachConversation = catchAsync(async (req, res) => {
   const id = req.params.id;
   const result = await conversationServices.getEachConversation(id);
@@ -22,7 +23,7 @@ const getEachConversation = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Conversation successfully",
+    message: "Conversation retrieved successfully",
     data: result,
   });
 });

@@ -11,7 +11,7 @@ const setReminder = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Notification successfully",
+    message: "Reminder set successfully",
     data: result,
   });
 });
@@ -25,7 +25,7 @@ const getMyReminders = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Notification successfully",
+    message: "Reminders retrieved successfully",
     data: result,
   });
 });

@@ -12,7 +12,7 @@ const getTripsByTeacher = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "joinTrip successfully",
+    message: "Teacher trips retrieved successfully",
     data: result,
   });
 });
@@ -26,7 +26,7 @@ const getTripStudents = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "joinTrip successfully",
+    message: "Trip students retrieved successfully",
     data: result,
   });
 });
@@ -38,7 +38,7 @@ const removeParticipant = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "joinTrip successfully",
+    message: "Participant removed successfully",
     data: result,
   });
 });

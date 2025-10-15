@@ -94,7 +94,7 @@ const deleteUser = async (id: string) => {
       isDeleted: true,
     },
     { new: true }
-  );
+  ).select("-password -otp -expiresAt -isVerified -passwordChangedAt");
   return result;
 };
 

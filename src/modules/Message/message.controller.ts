@@ -12,7 +12,7 @@ const sendMessageByText = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Message sent successfully",
     data: result,
   });
 });
@@ -30,7 +30,7 @@ const sendMessageByAttachment = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Message with attachment sent successfully",
     data: result,
   });
 });
@@ -43,7 +43,7 @@ const getAllMessage = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Messages retrieved successfully",
     data: result,
   });
 });
@@ -54,7 +54,7 @@ const getEachMessage = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Message retrieved successfully",
     data: result,
   });
 });
@@ -65,7 +65,7 @@ const updateMessage = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Message updated successfully",
     data: result,
   });
 });
@@ -76,7 +76,7 @@ const deleteMessage = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Message deleted successfully",
     data: result,
   });
 });

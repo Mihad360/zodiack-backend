@@ -6,13 +6,13 @@ import { JwtPayload } from "../../interface/global";
 
 const requestLocation = catchAsync(async (req, res) => {
   const id = req.params.id;
-  console.log("lsjfslkj",id);
+  console.log("lsjfslkj", id);
   const result = await locationServices.requestLocation(id, req.body);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "createTripParticipants successfully",
+    message: "Location request sent successfully",
     data: result,
   });
 });
@@ -24,7 +24,7 @@ const requestLocationsForMultipleStudents = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "createTripParticipants successfully",
+    message: "Location requests sent to multiple students successfully",
     data: result,
   });
 });
@@ -40,22 +40,19 @@ const sendLatLongs = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "createTripParticipants successfully",
+    message: "Location coordinates sent successfully",
     data: result,
   });
 });
 
 const extendTime = catchAsync(async (req, res) => {
   const userId = req.params.userId;
-  const result = await locationServices.extendTime(
-    userId,
-    req.body
-  );
+  const result = await locationServices.extendTime(userId, req.body);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "createTripParticipants successfully",
+    message: "Location tracking time extended successfully",
     data: result,
   });
 });
@@ -66,7 +63,7 @@ const getAllLocations = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "createTripParticipants successfully",
+    message: "All locations retrieved successfully",
     data: result,
   });
 });
@@ -78,7 +75,7 @@ const getMyLocations = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "createTripParticipants successfully",
+    message: "My locations retrieved successfully",
     data: result,
   });
 });

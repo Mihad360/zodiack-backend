@@ -9,7 +9,7 @@ const createTeacher = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Teacher created succesfully",
+    message: "Teacher created successfully",
     data: result,
   });
 });
@@ -20,7 +20,7 @@ const getAllTeachers = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Teacher created succesfully",
+    message: "Teachers retrieved successfully",
     meta: result.meta,
     data: result.result,
   });
@@ -33,7 +33,7 @@ const getEachTeacher = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Teacher created succesfully",
+    message: "Teacher retrieved successfully",
     data: result,
   });
 });
@@ -45,7 +45,7 @@ const updateLicense = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Teacher created succesfully",
+    message: "License updated successfully",
     data: result,
   });
 });

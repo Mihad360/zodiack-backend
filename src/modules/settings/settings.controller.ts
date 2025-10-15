@@ -9,7 +9,7 @@ const updateSettings = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "joinTrip successfully",
+    message: "Settings updated successfully",
     data: result,
   });
 });
@@ -20,7 +20,7 @@ const getSettings = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "joinTrip successfully",
+    message: "Settings retrieved successfully",
     data: result,
   });
 });

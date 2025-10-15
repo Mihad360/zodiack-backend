@@ -48,7 +48,7 @@ const participantLogin = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Logged in successfully",
+    message: "Participant logged in successfully",
     data: {
       role,
       accessToken,
@@ -108,7 +108,7 @@ const refreshToken = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "refresh token created succesfully",
+    message: "Access token refreshed successfully",
     data: result,
   });
 });

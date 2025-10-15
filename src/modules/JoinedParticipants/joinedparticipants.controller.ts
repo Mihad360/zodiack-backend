@@ -13,7 +13,7 @@ const createTripParticipants = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "createTripParticipants successfully",
+    message: "Trip participants created successfully",
     data: result,
   });
 });
@@ -26,7 +26,7 @@ const joinTrip = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "joinTrip successfully",
+    message: "Trip joined successfully",
     data: result,
   });
 });
@@ -41,7 +41,7 @@ const joinTripByOnlyCode = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "joinTrip successfully",
+    message: "Trip joined successfully using code",
     data: result,
   });
 });
@@ -56,7 +56,7 @@ const requestPermissionSlip = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "joinTrip successfully",
+    message: "Permission slip requested successfully",
     data: result,
   });
 });

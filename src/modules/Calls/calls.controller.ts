@@ -13,10 +13,11 @@ const createCall = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Call successfully",
+    message: "Call initiated successfully",
     data: result,
   });
 });
+
 const acceptCall = catchAsync(async (req, res) => {
   const callId = req.params.callId;
   const result = await CallServices.acceptCall(callId);
@@ -24,10 +25,11 @@ const acceptCall = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Call accepted successfully",
     data: result,
   });
 });
+
 const declineCall = catchAsync(async (req, res) => {
   const callId = req.params.callId;
   const result = await CallServices.declineCall(callId);
@@ -35,17 +37,18 @@ const declineCall = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Call declined successfully",
     data: result,
   });
 });
+
 const deleteCall = catchAsync(async (req, res) => {
   const result = await CallServices.deleteCall();
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Call deleted successfully",
     data: result,
   });
 });

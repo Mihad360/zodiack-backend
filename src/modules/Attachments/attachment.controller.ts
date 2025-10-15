@@ -9,37 +9,40 @@ const uploadAttachment = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Attachment uploaded successfully",
     data: result,
   });
 });
+
 const getAllAttachmentBySpeceficMessage = catchAsync(async (req, res) => {
   const result = await AttachmentServices.getAllAttachmentBySpeceficMessage();
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Attachments retrieved successfully",
     data: result,
   });
 });
+
 const getEachAttachment = catchAsync(async (req, res) => {
   const result = await AttachmentServices.getEachAttachment();
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Attachment retrieved successfully",
     data: result,
   });
 });
+
 const deleteAttachment = catchAsync(async (req, res) => {
   const result = await AttachmentServices.deleteAttachment();
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Message successfully",
+    message: "Attachment deleted successfully",
     data: result,
   });
 });

@@ -12,7 +12,7 @@ const createTrip = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Trip created succesfully",
+    message: "Trip created successfully",
     data: result,
   });
 });
@@ -23,7 +23,7 @@ const getTrips = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Trip retrieved succesfully",
+    message: "Trips retrieved successfully",
     meta: result.meta,
     data: result.result,
   });
@@ -37,7 +37,7 @@ const getEachTrip = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Trip retrieved succesfully",
+    message: "Trip retrieved successfully",
     data: result,
   });
 });
@@ -49,7 +49,7 @@ const getEachTripParticipants = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Trip retrieved succesfully",
+    message: "Trip participants retrieved successfully",
     data: result,
   });
 });
@@ -60,7 +60,7 @@ const mostRecentTrips = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Trip retrieved succesfully",
+    message: "Most recent trips retrieved successfully",
     data: result,
   });
 });

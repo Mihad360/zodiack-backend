@@ -10,7 +10,7 @@ const getUsers = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "User retrived succesfully",
+    message: "Users retrieved successfully",
     meta: result.meta,
     data: result.result,
   });
@@ -23,7 +23,7 @@ const getMe = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "data retrieved",
+    message: "Profile retrieved successfully",
     data: result,
   });
 });
@@ -37,7 +37,7 @@ const editUserProfile = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "User edit succesfully",
+    message: "Profile updated successfully",
     data: result,
   });
 });
@@ -49,7 +49,7 @@ const deleteUser = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "User deleted succesfully",
+    message: "User deleted successfully",
     data: result,
   });
 });
@@ -60,17 +60,18 @@ const getAllMessageForUser = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "User deleted succesfully",
+    message: "User messages retrieved successfully",
     data: result,
   });
 });
+
 const getAllNotificationForUser = catchAsync(async (req, res) => {
   const result = await userServices.getAllNotificationForUser();
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "User deleted succesfully",
+    message: "User notifications retrieved successfully",
     data: result,
   });
 });
@@ -81,7 +82,7 @@ const getAllConversationForUser = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "User deleted succesfully",
+    message: "User conversations retrieved successfully",
     data: result,
   });
 });
