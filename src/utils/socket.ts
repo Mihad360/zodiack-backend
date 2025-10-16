@@ -1,4 +1,3 @@
-import { locationServices } from "./../modules/Location/location.service";
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Server as SocketIOServer, Socket } from "socket.io";

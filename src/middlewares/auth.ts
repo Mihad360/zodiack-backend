@@ -49,7 +49,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
     if (requiredRoles && !requiredRoles.includes(role)) {
       throw new AppError(HttpStatus.UNAUTHORIZED, "You are not authorized");
     }
-    
+
     if (
       user.passwordChangedAt &&
       (await UserModel.isOldTokenValid(user.passwordChangedAt, iat as number))

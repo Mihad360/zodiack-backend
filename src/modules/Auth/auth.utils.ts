@@ -20,7 +20,8 @@ export const verificationEmailTemplate = (name: string, otp: string) => {
 
 export const checkOtp = async (email: string, otp: string) => {
   const otpUser = await UserModel.findOne({ email: email });
-  if (otpUser && otpUser.otp !== otp) {
+  console.log(otpUser?.otp);
+  if (otpUser && otpUser?.otp !== otp) {
     throw new AppError(HttpStatus.BAD_REQUEST, "The otp is invalid!");
   }
   const updateUser = await UserModel.findOneAndUpdate(
