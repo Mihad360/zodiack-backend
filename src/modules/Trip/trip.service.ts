@@ -3,7 +3,7 @@ import AppError from "../../errors/AppError";
 import { UserModel } from "../user/user.model";
 import { ITrip } from "./trip.interface";
 import { generateQrOtp } from "./trip.utils";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { TripModel } from "./trip.model";
 import QueryBuilder from "../../builder/QueryBuilder";
 import { searchTrips } from "./trip.const";
@@ -11,16 +11,59 @@ import { JwtPayload, StudentJwtPayload } from "../../interface/global";
 import dayjs from "dayjs";
 
 const createTrip = async (id: string, payload: ITrip) => {
-  const isUserExist = await UserModel.findById(id);
-  if (!isUserExist) {
-    throw new AppError(HttpStatus.NOT_FOUND, "The user is not exist");
-  }
-  const code = generateQrOtp();
-  payload.code = code;
-  payload.createdBy = new Types.ObjectId(isUserExist._id);
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  const result = await TripModel.create(payload);
-  return result;
+  try {
+    const isUserExist = await UserModel.findById(id).session(session);
+    if (!isUserExist) {
+      throw new AppError(HttpStatus.NOT_FOUND, "The user does not exist");
+    }
+
+    // Check if the teacher already has any planned or ongoing trips
+    const existingTrips = await TripModel.find({
+      createdBy: isUserExist._id,
+      isDeleted: false,
+      $or: [{ status: "planned" }, { status: "ongoing" }],
+    }).session(session);
+
+    if (existingTrips.length > 0) {
+      throw new AppError(
+        HttpStatus.BAD_REQUEST,
+        "The teacher already has a planned or ongoing trip."
+      );
+    }
+
+    const code = generateQrOtp();
+    payload.code = code;
+    payload.createdBy = new Types.ObjectId(isUserExist._id);
+
+    // Create the trip
+    const result = await TripModel.create([payload], { session });
+
+    // Update the user's trip status
+    await UserModel.findByIdAndUpdate(
+      id,
+      {
+        isTripOngoing: true,
+        ongoingTripId: result[0]._id, // Set ongoingTripId to the created trip's ID
+      },
+      { new: true, session } // Ensure the updated document is returned
+    );
+
+    // Commit the transaction
+    await session.commitTransaction();
+
+    // End the session
+    session.endSession();
+
+    return result[0]; // Return the created trip
+  } catch (error) {
+    // Rollback the transaction in case of an error
+    await session.abortTransaction();
+    session.endSession();
+    throw error; // Re-throw the error to be handled by the caller
+  }
 };
 
 const getTrips = async (query: Record<string, unknown>) => {
@@ -90,7 +133,7 @@ const getEachTripParticipants = async (
       ])
       .populate({
         path: "participants",
-        select: "name role profileImage",
+        select: "name role profileImage fatherName motherName",
       }),
     query
   )
@@ -122,10 +165,32 @@ const mostRecentTrips = async () => {
   return result;
 };
 
+const getEachTripForTeacher = async (id: string, user: JwtPayload) => {
+  const userId = new Types.ObjectId(user.user);
+  const isTripExist = await TripModel.findOne({
+    _id: id,
+    createdBy: userId,
+    status: "planned",
+  });
+  // .populate({
+  //   path: "createdBy",
+  //   select: "name",
+  // })
+  // .populate({
+  //   path: "participants",
+  //   select: "name role profileImage",
+  // });
+  if (!isTripExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "The trip is not exist");
+  }
+  return isTripExist;
+};
+
 export const tripServices = {
   createTrip,
   getEachTrip,
   getEachTripParticipants,
   getTrips,
   mostRecentTrips,
+  getEachTripForTeacher,
 };

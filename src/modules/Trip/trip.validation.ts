@@ -12,7 +12,6 @@ export const tripValidationSchema = z.object({
     }),
     trip_time: z.string(),
     end_time: z.string(),
-    location: z.string(),
     status: z
       .enum(["planned", "ongoing", "completed", "cancelled"])
       .default("planned").optional(),

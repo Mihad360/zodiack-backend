@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 
 export interface IUser {
   _id?: string;
@@ -16,6 +16,8 @@ export interface IUser {
   otp?: string;
   expiresAt?: Date;
   isVerified?: boolean;
+  isTripOngoing?: boolean;
+  ongoingTripId?: Types.ObjectId | null;
   licenseExpiresAt?: Date;
   isLicenseAvailable?: boolean;
   passwordChangedAt?: Date;

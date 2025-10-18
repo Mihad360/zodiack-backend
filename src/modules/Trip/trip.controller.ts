@@ -65,10 +65,24 @@ const mostRecentTrips = catchAsync(async (req, res) => {
   });
 });
 
+const getEachTripForTeacher = catchAsync(async (req, res) => {
+  const id = req.params.tripId;
+  const user = req.user as JwtPayload;
+  const result = await tripServices.getEachTripForTeacher(id, user);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Trip retrieved successfully",
+    data: result,
+  });
+});
+
 export const tripControllers = {
   createTrip,
   getEachTrip,
   getEachTripParticipants,
   getTrips,
   mostRecentTrips,
+  getEachTripForTeacher,
 };

@@ -8,6 +8,11 @@ const router = express.Router();
 
 router.get("/recent-groups", auth("admin"), tripControllers.mostRecentTrips);
 router.get(
+  "/:tripId",
+  auth("teacher"),
+  tripControllers.getEachTripForTeacher
+);
+router.get(
   "/:id/trip-participants",
   auth("admin", "teacher"),
   tripControllers.getEachTripParticipants

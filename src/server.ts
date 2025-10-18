@@ -111,6 +111,18 @@ async function main() {
               console.log(
                 `Trip "${trip.trip_name}" status updated to "completed".`
               );
+
+              // Find the teacher (createdBy) of the trip
+              const teacher = await UserModel.findById(trip.createdBy);
+              if (teacher) {
+                // Update the teacher's ongoing trip status
+                teacher.isTripOngoing = false;
+                teacher.ongoingTripId = null;
+                await teacher.save();
+                console.log(
+                  `Teacher with ID "${teacher._id}" trip status updated to "not ongoing".`
+                );
+              }
             }
           } else if (
             currentTime.isAfter(tripStartTime) &&

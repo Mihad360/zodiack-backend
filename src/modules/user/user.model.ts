@@ -21,6 +21,8 @@ const userSchema = new Schema<IUser, User>(
     otp: { type: String, default: null },
     expiresAt: { type: Date, default: null },
     isVerified: { type: Boolean, default: false },
+    isTripOngoing: { type: Boolean, default: false },
+    ongoingTripId: { type: Schema.Types.ObjectId, default: null },
     licenseExpiresAt: { type: Date, default: null },
     isLicenseAvailable: { type: Boolean, default: false },
     passwordChangedAt: { type: Date, default: null },
