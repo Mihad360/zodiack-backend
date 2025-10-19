@@ -7,6 +7,7 @@ import { TUserRole } from "../interface/global";
 import { JwtPayload } from "../interface/global";
 import AppError from "../errors/AppError";
 import { UserModel } from "../modules/user/user.model";
+import { verifyToken } from "../utils/jwt";
 
 const auth = (...requiredRoles: TUserRole[]) => {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -26,15 +27,15 @@ const auth = (...requiredRoles: TUserRole[]) => {
     // verify token -----
     let decoded;
     try {
-      decoded = jwt.verify(
+      decoded = verifyToken(
         token,
         config.JWT_SECRET_KEY as string
       ) as jwtPayload;
+      console.log(decoded);
     } catch (error) {
       console.log(error);
       throw new AppError(HttpStatus.UNAUTHORIZED, "Unauthorized");
     }
-    console.log(decoded);
     const { role, email, iat } = decoded;
 
     // Proceed with other checks for non-student roles
