@@ -19,7 +19,7 @@ router.post(
   joinedParticipantsControllers.joinTripByOnlyCode
 );
 router.post(
-  "/:id/request-slip",
+  "/:tripId/request-slip",
   auth("teacher"),
   joinedParticipantsControllers.requestPermissionSlip
 );

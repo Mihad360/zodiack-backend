@@ -10,6 +10,7 @@ import cron from "node-cron";
 import { UserModel } from "./modules/user/user.model";
 import { TripModel } from "./modules/Trip/trip.model";
 import dayjs from "dayjs";
+import { WebSocket } from "ws";
 
 let server: HttpServer;
 
@@ -47,6 +48,21 @@ async function main() {
       console.log(
         `🚀 Server is running on port ${config.PORT} and took ${Date.now() - serverStartTime}ms to start`
       );
+    });
+
+    const wss = new WebSocket.Server({ noServer: true });
+
+    wss.on("connection", (ws) => {
+      console.log("New client connected");
+
+      ws.on("message", (message) => {
+        console.log("Received message:", message);
+        // Here you will handle incoming messages (e.g., offers, answers, ICE candidates)
+      });
+
+      ws.on("close", () => {
+        console.log("Client disconnected");
+      });
     });
 
     // Initialize Socket.IO

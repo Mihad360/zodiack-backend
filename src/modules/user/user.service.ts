@@ -29,7 +29,9 @@ const getUsers = async (query: Record<string, unknown>) => {
 
 const getMe = async (user: JwtPayload) => {
   const userId = new Types.ObjectId(user.user);
-  const isUserExist = await UserModel.findById(userId).select("-password");
+  const isUserExist = await UserModel.findById(userId)
+    .populate({ path: "ongoingTripId", select: "code" })
+    .select("-password");
   if (!isUserExist) {
     throw new AppError(HttpStatus.NOT_FOUND, "The user is not exist");
   }

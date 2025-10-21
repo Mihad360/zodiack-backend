@@ -125,16 +125,11 @@ const getEachTripParticipants = async (
 ) => {
   const tripQuery = new QueryBuilder(
     TripModel.find({ _id: id })
-      .populate([
-        {
-          path: "createdBy", // Populate createdBy (teacher) details
-          select: "name role profileImage", // Exclude password field from user data
-        },
-      ])
       .populate({
         path: "participants",
         select: "name role profileImage fatherName motherName",
-      }),
+      })
+      .select("participants"),
     query
   )
     .search(searchTrips)
@@ -145,7 +140,7 @@ const getEachTripParticipants = async (
 
   const meta = await tripQuery.countTotal();
   const result = await tripQuery.modelQuery;
-  return { meta, result };
+  return { meta, result: result.length > 0 ? result[0]?.participants : [] };
 };
 
 const mostRecentTrips = async () => {
