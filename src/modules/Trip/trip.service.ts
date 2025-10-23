@@ -123,58 +123,127 @@ const getEachTripParticipants = async (
   id: string,
   query: Record<string, unknown>
 ) => {
-  const tripQuery = new QueryBuilder(
-    TripModel.find({ _id: id })
-      .populate({
-        path: "participants",
-        select: "name role profileImage fatherName motherName",
-      })
-      .select("participants"),
-    query
-  )
-    .search(searchTrips)
-    .filter()
-    .sort()
-    .paginate()
-    .fields();
+  const searchTerm = query.searchTerm || ""; // Get the searchTerm from query
 
-  const meta = await tripQuery.countTotal();
-  const result = await tripQuery.modelQuery;
-  return { meta, result: result.length > 0 ? result[0]?.participants : [] };
+  // Define the aggregation pipeline
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pipeline: any[] = [
+    // Match the trip by ID and status "planned"
+    {
+      $match: {
+        _id: new Types.ObjectId(id), // Match by trip ID
+        status: "planned", // Ensure the trip status is "planned"
+      },
+    },
+    // Lookup to populate the participants from the 'users' collection
+    {
+      $lookup: {
+        from: "users", // Assuming the 'users' collection stores participant data
+        localField: "participants", // Field in 'Trip' that holds participant references
+        foreignField: "_id", // Field in 'users' collection that matches the participant reference
+        as: "populatedParticipants", // Alias for the populated participants
+      },
+    },
+    // Optionally, search within the populated participants array if a searchTerm is provided
+    ...(searchTerm
+      ? [
+          {
+            $match: {
+              "populatedParticipants.name": {
+                $regex: searchTerm, // Apply the search term for participants' names
+                $options: "i", // Case-insensitive search
+              },
+            },
+          },
+        ]
+      : []),
+    // Project only the necessary fields from the populated participants
+    {
+      $project: {
+        "populatedParticipants.name": 1,
+        "populatedParticipants.fatherName": 1,
+        "populatedParticipants.motherName": 1,
+        "populatedParticipants.role": 1,
+      },
+    },
+    // Flatten the participants array if necessary (assuming only one participant per trip)
+    {
+      $unwind: "$populatedParticipants",
+    },
+  ];
+
+  // Execute the aggregation pipeline
+  const result = await TripModel.aggregate(pipeline);
+
+  // Return participants or an empty array if no results
+  return result.length > 0 ? result[0]?.populatedParticipants : [];
 };
 
 const mostRecentTrips = async () => {
-  const result = await TripModel.find({ isDeleted: false })
-    .populate({
-      path: "createdBy",
-      select:
-        "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt",
-    })
-    .populate({
-      path: "participants",
-      select:
-        "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt",
-    })
-    .sort({ createdAt: -1 })
-    .limit(5);
-  return result;
+  const teachers = await UserModel.find({
+    role: "teacher",
+    isDeleted: false,
+  });
+  const trips = await TripModel.find({ isDeleted: false });
+  if (!teachers || !trips) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Teacher or trip not found");
+  }
+  const result = await TripModel.aggregate([
+    // Match trips that are not deleted
+    { $match: { isDeleted: false } },
+
+    // Lookup the teacher's data from the User collection
+    {
+      $lookup: {
+        from: "users", // Assuming the collection name for teachers is 'users'
+        localField: "createdBy",
+        foreignField: "_id",
+        as: "teacher",
+      },
+    },
+
+    // Project the necessary fields (teacher's name, email, trip name, trip date)
+    {
+      $project: {
+        _id: 1,
+        trip_name: 1, // Assuming the trip name is stored as `trip_name` in the Trip model
+        trip_date: 1, // Assuming the trip date is stored as `trip_date` in the Trip model
+        trip_time: 1, // Assuming the trip time is stored as `trip_time` in the Trip model
+        status: 1,
+        location: 1,
+        leaving_place: 1,
+        code: 1,
+        participants: 1,
+        teacherName: { $arrayElemAt: ["$teacher.name", 0] }, // Get the teacher's name
+        teacherEmail: { $arrayElemAt: ["$teacher.email", 0] }, // Get the teacher's email
+      },
+    },
+
+    // Sort by creation date in descending order
+    { $sort: { createdAt: -1 } },
+
+    // Limit to the 5 most recent trips (adjust the limit if needed)
+    { $limit: 10 },
+  ]);
+
+  const teacher = teachers.length;
+  const trip = trips.length;
+  return { teacher, trip, result }; // Return the aggregated result (first item in the array)
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getEachTripForTeacher = async (id: string, user: JwtPayload) => {
-  const userId = new Types.ObjectId(user.user);
+  // const userId = new Types.ObjectId(user.user);
   const isTripExist = await TripModel.findOne({
     _id: id,
-    createdBy: userId,
+    // createdBy: userId,
     status: "planned",
-  });
-  // .populate({
-  //   path: "createdBy",
-  //   select: "name",
-  // })
-  // .populate({
-  //   path: "participants",
-  //   select: "name role profileImage",
-  // });
+  })
+    .populate({ path: "createdBy", select: "name email profileImage" })
+    .populate({
+      path: "participants",
+      select: "name fatherName motherName role conversationId",
+    });
   if (!isTripExist) {
     throw new AppError(HttpStatus.NOT_FOUND, "The trip is not exist");
   }

@@ -6,8 +6,16 @@ import { tripValidationSchema } from "./trip.validation";
 
 const router = express.Router();
 
-router.get("/recent-groups", auth("admin"), tripControllers.mostRecentTrips);
-router.get("/:tripId", auth("teacher"), tripControllers.getEachTripForTeacher);
+router.get(
+  "/recent-groups",
+  auth("admin", "school"),
+  tripControllers.mostRecentTrips
+);
+router.get(
+  "/:tripId",
+  auth("teacher", "school"),
+  tripControllers.getEachTripForTeacher
+);
 router.get(
   "/:id/trip-participants",
   auth("admin", "teacher"),

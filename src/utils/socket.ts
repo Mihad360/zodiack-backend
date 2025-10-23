@@ -121,25 +121,13 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       console.log(`User ${userId} connected with socket ID: ${socket.id}`);
     });
 
-    // Listen for 'locationRequest' event (this is the real-time data coming from the backend)
-    socket.on("locationRequest", (data) => {
-      const { userId, status } = data;
+    // Listen for location updates (from student)
+    socket.on("sendLocation", (data) => {
+      const { latitude, longitude, userId } = data;
+      console.log("Received location from student:", latitude, longitude);
 
-      // Log the details of the received location request to verify the information
-      console.log("Received Location Request:", {
-        userId,
-        status,
-      });
-    });
-
-    socket.on("locationUpdated", (data) => {
-      const { userId, status } = data;
-
-      // Log the details of the received location request to verify the information
-      console.log("Received Location Request:", {
-        userId,
-        status,
-      });
+      // Optionally, send this data to the teacher or store it
+      io.emit("locationData", { userId, latitude, longitude });
     });
 
     socket.on("disconnect", () => {
@@ -212,25 +200,58 @@ export const emitNotification = async ({
 };
 
 // Teacher requests location of a specific user
+// Emits a location request for a specific user (teacher requesting student's location)
 export const emitLocationRequest = async (userId: string) => {
   // Ensure Socket.IO is initialized
   if (!io) {
     throw new Error("Socket.IO is not initialized");
   }
-
-  // Find the user's socket connection in the map
-  const userSocket = connectedUsers.get(userId);
-  console.log("SOCEKT", userSocket);
-  if (userSocket) {
-    // Emit location request to the specific user's socket
-    io.to(userSocket.socketID).emit("locationRequest", {
-      userId, // Send the userId to match the request
-      status: "requesting-location", // Custom status for the request
-    });
-
-    console.log(`Location request sent to user ${userId}`);
+  if (io) {
+    io.emit(`locationRequest-${userId}`, { userId }); // Emit the request to the student
   } else {
-    console.log(`User with ID ${userId} is not connected via Socket.IO`);
+    console.log(`User ${userId} is not connected.`);
+  }
+};
+
+// Listens for the student's location update and broadcasts it to the teacher or other connected clients
+export const emitLocationUpdated = async () => {
+  if (!io) {
+    throw new Error("Socket.IO is not initialized");
+  }
+
+  io.on("connection", (socket) => {
+    console.log("A user connected:", socket.id);
+
+    // Listen for 'sendLocation' event from the student (this is where the student sends their location)
+    socket.on("sendLocation", (data) => {
+      const { latitude, longitude, userId } = data;
+
+      console.log(
+        `Received location from student ${userId}:`,
+        latitude,
+        longitude
+      );
+
+      // Optionally, you can broadcast to the teacher or store this location
+      io.emit("locationData", { userId, latitude, longitude }); // Broadcast to everyone or specific user
+    });
+  });
+};
+
+export const emitEmergency = async (
+  userId: string,
+  latitude: number,
+  longitude: number
+) => {
+  // Ensure Socket.IO is initialized
+  if (!io) {
+    throw new Error("Socket.IO is not initialized");
+  }
+  console.log(userId);
+  if (io) {
+    io.emit(`emergency-${userId?.toString()}`, { userId, latitude, longitude }); // Emit the request to the student
+  } else {
+    console.log(`User ${userId} is not connected.`);
   }
 };
 

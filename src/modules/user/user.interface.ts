@@ -9,7 +9,7 @@ export interface IUser {
   email: string;
   password: string;
   address?: string;
-  role: "teacher" | "student" | "admin" | "participant";
+  role: "teacher" | "student" | "admin" | "participant" | "school";
   profileImage?: string;
   phoneNumber?: string;
   isActive?: boolean;
@@ -21,6 +21,7 @@ export interface IUser {
   licenseExpiresAt?: Date;
   isLicenseAvailable?: boolean;
   passwordChangedAt?: Date;
+  conversationId?: Types.ObjectId;
   isDeleted?: boolean;
   createdAt?: Date;
   updatedAt?: Date;

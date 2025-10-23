@@ -14,5 +14,10 @@ router.get(
   auth("participant", "teacher"),
   conversationControllers.getEachConversation
 );
+router.get(
+  "/:userId/my-conversation",
+  auth("teacher", "participant"),
+  conversationControllers.getEachMyConversation
+);
 
 export const ConversationRoutes = router;

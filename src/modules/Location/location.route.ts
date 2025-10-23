@@ -4,35 +4,20 @@ import { locationControllers } from "./location.controller";
 
 const router = express.Router();
 
-router.get(
-  "/my-locs",
-  auth("teacher", "participant", "admin"),
-  locationControllers.getMyLocations
-);
-router.get(
-  "/",
-  auth("teacher", "participant", "admin"),
-  locationControllers.getAllLocations
-);
 router.post(
-  "/:id/request-loc",
+  "/:userId/request-loc",
   auth("teacher"),
   locationControllers.requestLocation
 );
 router.post(
-  "/:tripId/request-mul-loc",
+  "/:tripId/request-multiple-loc",
   auth("teacher"),
-  locationControllers.requestLocationsForMultipleStudents
+  locationControllers.requestMultipleLocation
 );
 router.post(
-  "/loc-response",
+  "/:tripId/emergency-loc",
   auth("teacher", "participant"),
-  locationControllers.sendLatLongs
-);
-router.post(
-  "/:userId/extend-loc-time",
-  auth("teacher"),
-  locationControllers.extendTime
+  locationControllers.emitEmergencyRequest
 );
 
 export const LocationRoutes = router;

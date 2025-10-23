@@ -6,7 +6,7 @@ import AppError from "../../errors/AppError";
 import { loginRequestEmailTemplate } from "./admin.utils";
 import { sendEmail } from "../../utils/sendEmail";
 import QueryBuilder from "../../builder/QueryBuilder";
-import { searchTeachers } from "./admin.const";
+import { searchStudents, searchTeachers } from "./admin.const";
 
 const createTeacher = async (payload: IUser) => {
   const isUserExist = await UserModel.findOne({
@@ -67,6 +67,30 @@ const getAllTeachers = async (query: Record<string, unknown>) => {
   return { meta, result };
 };
 
+const getAllStudents = async (query: Record<string, unknown>) => {
+  const teachersQuery = new QueryBuilder(
+    UserModel.find(
+      { isDeleted: false, role: "teacher" },
+      "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt"
+    ),
+    query
+  )
+    .search(searchStudents)
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const meta = await teachersQuery.countTotal();
+  const result = (await teachersQuery.modelQuery).map((teacher: any) => {
+    const obj = teacher.toObject();
+    delete obj.password;
+    return obj;
+  });
+
+  return { meta, result };
+};
+
 const getEachTeacher = async (id: string) => {
   const result = await UserModel.findById(id).select(
     "-password -otp -expiresAt -isVerified -licenseExpiresAt -isLicenseAvailable -passwordChangedAt"
@@ -102,4 +126,5 @@ export const AdminServices = {
   getAllTeachers,
   getEachTeacher,
   updateLicense,
+  getAllStudents,
 };

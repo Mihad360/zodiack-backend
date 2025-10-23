@@ -3,14 +3,13 @@
 import { createServer, Server as HttpServer } from "http";
 import mongoose from "mongoose";
 import app from "./app"; // Express app
-import seedSuperAdmin from "./DB"; // Seeding function
+import seedSuperAdmin, { seedSchool } from "./DB"; // Seeding function
 import config from "./config";
 import { initSocketIO } from "./utils/socket";
 import cron from "node-cron";
 import { UserModel } from "./modules/user/user.model";
 import { TripModel } from "./modules/Trip/trip.model";
 import dayjs from "dayjs";
-import { WebSocket } from "ws";
 
 let server: HttpServer;
 
@@ -50,23 +49,8 @@ async function main() {
       );
     });
 
-    const wss = new WebSocket.Server({ noServer: true });
-
-    wss.on("connection", (ws) => {
-      console.log("New client connected");
-
-      ws.on("message", (message) => {
-        console.log("Received message:", message);
-        // Here you will handle incoming messages (e.g., offers, answers, ICE candidates)
-      });
-
-      ws.on("close", () => {
-        console.log("Client disconnected");
-      });
-    });
-
     // Initialize Socket.IO
-    initSocketIO(server);
+    await initSocketIO(server);
 
     cron.schedule("0 0 * * *", async () => {
       const currentDate = new Date();
@@ -168,7 +152,7 @@ async function main() {
       }
     });
 
-    await Promise.all([seedSuperAdmin()]);
+    await Promise.all([seedSuperAdmin(), seedSchool()]);
   } catch (error) {
     console.error("Error in main function:", error);
     process.exit(1);

@@ -26,6 +26,18 @@ const getAllTeachers = catchAsync(async (req, res) => {
   });
 });
 
+const getAllStudents = catchAsync(async (req, res) => {
+  const result = await AdminServices.getAllStudents(req.query);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Teachers retrieved successfully",
+    meta: result.meta,
+    data: result.result,
+  });
+});
+
 const getEachTeacher = catchAsync(async (req, res) => {
   const id = req.params.id;
   const result = await AdminServices.getEachTeacher(id);
@@ -55,4 +67,5 @@ export const AdminController = {
   getAllTeachers,
   getEachTeacher,
   updateLicense,
+  getAllStudents
 };

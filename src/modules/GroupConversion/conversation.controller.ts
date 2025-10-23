@@ -16,6 +16,19 @@ const getMyConversation = catchAsync(async (req, res) => {
   });
 });
 
+const getEachMyConversation = catchAsync(async (req, res) => {
+  const id = req.params.userId;
+  const user = req.user as JwtPayload;
+  const result = await conversationServices.getEachMyConversation(id, user);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Conversation retrieved successfully",
+    data: result,
+  });
+});
+
 const getEachConversation = catchAsync(async (req, res) => {
   const id = req.params.id;
   const result = await conversationServices.getEachConversation(id);
@@ -31,4 +44,5 @@ const getEachConversation = catchAsync(async (req, res) => {
 export const conversationControllers = {
   getEachConversation,
   getMyConversation,
+  getEachMyConversation,
 };

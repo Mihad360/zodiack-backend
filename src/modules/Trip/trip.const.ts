@@ -6,6 +6,6 @@ export const searchTrips = [
   "end_time",
 ];
 export const searchParticipants = [
-  "participants.firstName",
-  "participants.lastName",
+  "participants.name",
+  "participants.fatherName",
 ];

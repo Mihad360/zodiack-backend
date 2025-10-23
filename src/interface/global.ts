@@ -22,6 +22,7 @@ export const USER_ROLE = {
   student: "student",
   teacher: "teacher",
   participant: "participant",
+  school: "school",
 } as const;
 
 export type TUserRole = keyof typeof USER_ROLE;

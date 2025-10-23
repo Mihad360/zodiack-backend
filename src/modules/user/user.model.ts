@@ -12,7 +12,7 @@ const userSchema = new Schema<IUser, User>(
     address: { type: String, default: null },
     role: {
       type: String,
-      enum: ["teacher", "student", "admin", "participant"],
+      enum: ["teacher", "student", "admin", "participant", "school"],
       default: null,
     },
     profileImage: { type: String, default: null },
@@ -26,6 +26,11 @@ const userSchema = new Schema<IUser, User>(
     licenseExpiresAt: { type: Date, default: null },
     isLicenseAvailable: { type: Boolean, default: false },
     passwordChangedAt: { type: Date, default: null },
+    conversationId: {
+      type: Schema.Types.ObjectId,
+      ref: "Conversation",
+      default: null,
+    },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

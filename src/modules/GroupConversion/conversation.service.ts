@@ -63,6 +63,43 @@ const getMyConversation = async (user: JwtPayload) => {
   throw new AppError(HttpStatus.FORBIDDEN, "Invalid role");
 };
 
+const getEachMyConversation = async (id: string, user: JwtPayload) => {
+  const userId = new Types.ObjectId(id);
+  const teacherId = new Types.ObjectId(user.user);
+  const isConversationExist = await ConversationModel.findOne({
+    user: userId,
+    teacher: teacherId,
+  });
+  console.log(user.role);
+  if (user.role === "teacher") {
+    if (!isConversationExist) {
+      throw new AppError(
+        HttpStatus.NOT_FOUND,
+        "Conversation not exist for teacher"
+      );
+    }
+    return isConversationExist;
+  }
+
+  if (user.role === "participant") {
+    const opponentTeacherId = new Types.ObjectId(id);
+    const isConversationExistForParticipant = await ConversationModel.findOne({
+      user: teacherId,
+      teacher: opponentTeacherId,
+    });
+
+    if (!isConversationExistForParticipant) {
+      throw new AppError(
+        HttpStatus.NOT_FOUND,
+        "Conversation not exist for participant"
+      );
+    }
+    return isConversationExistForParticipant;
+  }
+
+  throw new AppError(HttpStatus.BAD_REQUEST, "Invalid role");
+};
+
 const getEachConversation = async (id: string) => {
   const isConversationExist = await ConversationModel.findById(id)
     .populate({
@@ -83,4 +120,5 @@ const getEachConversation = async (id: string) => {
 export const conversationServices = {
   getEachConversation,
   getMyConversation,
+  getEachMyConversation,
 };

@@ -184,14 +184,24 @@ const addParticipantToTrip = async (
   userId: Types.ObjectId,
   session: mongoose.mongo.ClientSession
 ) => {
-  if (!trip?.participants?.includes(userId)) {
-    return await TripModel.findByIdAndUpdate(
-      trip._id,
-      { $addToSet: { participants: userId } }, // Add user ID only
-      { new: true, session }
+  // Check if the user is already a participant in any trip
+  const existingTrip = await TripModel.findOne({
+    participants: userId, // Check if the user is already a participant
+  });
+
+  if (existingTrip) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "User is already a participant in another trip"
     );
   }
-  return trip; // If user is already a participant, return the trip as is
+
+  // If user is not a participant in any trip, add them to the new trip
+  return await TripModel.findByIdAndUpdate(
+    trip._id,
+    { $addToSet: { participants: userId } }, // Add user ID only if not already in the list
+    { new: true, session }
+  );
 };
 
 const handleConversation = async (
@@ -208,6 +218,7 @@ const handleConversation = async (
     );
   }
   console.log(trip._id, trip.createdBy, joinedPart._id);
+
   // Step 1: Check if a conversation already exists for this teacher-student pair
   const conversation = await ConversationModel.findOne({
     trip_id: trip._id, // Check for the specific trip
@@ -232,10 +243,28 @@ const handleConversation = async (
       { session }
     );
 
+    console.log("New conversation created:", newConversation);
+
+    // Step 3: If the user is a participant, update their conversationId
+    const user = await UserModel.findById(newConversation[0].user);
+    console.log(user);
+    if (user && user.role === "participant") {
+      // Update the participant's record with the new conversationId
+      await UserModel.findByIdAndUpdate(
+        userId,
+        { conversationId: newConversation[0]._id },
+        { session }
+      );
+      console.log(
+        "Updated participant's conversationId:",
+        newConversation[0]._id
+      );
+    }
+
     return newConversation; // Return the newly created conversation
   }
 
-  // Step 3: If conversation already exists, return the existing conversation
+  // Step 4: If conversation already exists, return the existing conversation
   return conversation; // Return the existing conversation
 };
 
