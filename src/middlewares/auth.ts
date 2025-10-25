@@ -1,4 +1,4 @@
-import jwt, { JwtPayload as jwtPayload } from "jsonwebtoken";
+import { JwtPayload as jwtPayload } from "jsonwebtoken";
 import HttpStatus from "http-status";
 import { NextFunction, Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
@@ -50,11 +50,22 @@ const auth = (...requiredRoles: TUserRole[]) => {
     if (requiredRoles && !requiredRoles.includes(role)) {
       throw new AppError(HttpStatus.UNAUTHORIZED, "You are not authorized");
     }
-
+    
     if (
       user.passwordChangedAt &&
       (await UserModel.isOldTokenValid(user.passwordChangedAt, iat as number))
     ) {
+      // In your auth middleware, add debugging:
+      console.log("Token iat:", iat);
+      console.log("User passwordChangedAt:", user.passwordChangedAt);
+      console.log(
+        "Password changed timestamp (seconds):",
+        new Date(user.passwordChangedAt).getTime() / 1000
+      );
+      console.log(
+        "Is token old?",
+        await UserModel.isOldTokenValid(user.passwordChangedAt, iat as number)
+      );
       throw new AppError(HttpStatus.UNAUTHORIZED, "You are not authorized");
     }
 

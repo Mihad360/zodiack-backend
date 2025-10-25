@@ -24,7 +24,7 @@ router.patch(
   },
   userControllers.editUserProfile
 );
-router.delete("/:id", auth("admin", "school"), userControllers.deleteUser);
+router.delete("/:id", auth("admin", "school", 'teacher'), userControllers.deleteUser);
 router.delete("/:id", auth("teacher"), teacherControllers.removeParticipant);
 
 export const UserRoutes = router;

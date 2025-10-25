@@ -197,11 +197,23 @@ const addParticipantToTrip = async (
   }
 
   // If user is not a participant in any trip, add them to the new trip
-  return await TripModel.findByIdAndUpdate(
+  const tripData = await TripModel.findByIdAndUpdate(
     trip._id,
     { $addToSet: { participants: userId } }, // Add user ID only if not already in the list
     { new: true, session }
   );
+
+  if (tripData) {
+    await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        isTripOngoing: true,
+        ongoingTripId: tripData._id,
+      },
+      { new: true, session }
+    );
+  }
+  return tripData;
 };
 
 const handleConversation = async (
@@ -247,6 +259,7 @@ const handleConversation = async (
 
     // Step 3: If the user is a participant, update their conversationId
     const user = await UserModel.findById(newConversation[0].user);
+    console.log(user);
     console.log(user);
     if (user && user.role === "participant") {
       // Update the participant's record with the new conversationId

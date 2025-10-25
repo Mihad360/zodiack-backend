@@ -315,13 +315,13 @@ const changePassword = async (
   }
   if (result) {
     const jwtPayload: JwtPayload = {
-      user: user._id,
-      name: user.name,
-      email: user?.email,
-      role: user?.role,
-      isLicenseAvailable: user?.isLicenseAvailable,
-      profileImage: user?.profileImage,
-      isDeleted: user?.isDeleted,
+      user: result._id,
+      name: result.name,
+      email: result?.email,
+      role: result?.role,
+      isLicenseAvailable: result?.isLicenseAvailable,
+      profileImage: result?.profileImage,
+      isDeleted: result?.isDeleted,
     };
 
     const accessToken = createToken(
@@ -329,7 +329,12 @@ const changePassword = async (
       config.JWT_SECRET_KEY as string,
       config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
     );
-    return { accessToken };
+    const refreshToken = createToken(
+      jwtPayload,
+      config.jwt_refresh_secret as string,
+      config.JWT_REFRESH_EXPIRES_IN_FOR_TEACHER as string
+    );
+    return { accessToken, refreshToken };
   }
 };
 

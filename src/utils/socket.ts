@@ -68,7 +68,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
     const token =
       (socket.handshake.auth.token as string) ||
       (socket.handshake.headers.token as string);
-
+      
     if (!token) {
       return next(
         new ApiError(
@@ -201,6 +201,19 @@ export const emitNotification = async ({
 
 // Teacher requests location of a specific user
 // Emits a location request for a specific user (teacher requesting student's location)
+export const emitMessage = (conversationId: string, messageData: any) => {
+  // Ensure Socket.IO is initialized
+  if (!io) {
+    throw new Error("Socket.IO is not initialized");
+  }
+  console.log(conversationId, messageData);
+  if (io) {
+    io.emit(`newMessage-${conversationId}`, { conversationId, messageData }); // Emit the request to the student
+  } else {
+    console.log(`User ${conversationId} is not connected.`);
+  }
+};
+
 export const emitLocationRequest = async (userId: string) => {
   // Ensure Socket.IO is initialized
   if (!io) {

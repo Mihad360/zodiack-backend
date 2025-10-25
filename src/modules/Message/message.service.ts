@@ -14,6 +14,7 @@ import {
   IConversation,
   IMessageConversation,
 } from "../GroupConversion/conversation.interface";
+import { emitMessage } from "../../utils/socket";
 
 const sendMessageByText = async (
   conversationId: string,
@@ -67,6 +68,10 @@ const sendMessageByText = async (
         HttpStatus.BAD_REQUEST,
         "Something went wrong during conversation update"
       );
+    }
+
+    if (result[0] && updatedConversation.user) {
+      emitMessage(updatedConversation._id.toString(), result[0] as any);
     }
 
     // Commit transaction after everything is done
