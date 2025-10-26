@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Server as SocketIOServer, Socket } from "socket.io";
-import { Server as HttpServer } from "http";
+import { Server as HttpServer, request } from "http";
 import mongoose, { Types } from "mongoose";
 
 import { UserModel } from "../modules/user/user.model"; // User model
@@ -29,10 +29,22 @@ declare module "socket.io" {
     };
   }
 }
-
+interface ConnectedUserInformaiton {
+      _id: string;
+      name: string;
+      email: string;
+      role: string;
+       socketId: string 
+    }
 // Initialize the Socket.IO server
 let io: SocketIOServer;
-export const connectedUsers = new Map<string, { socketID: string }>();
+interface ActiveCall {
+  startTime: number;
+  intervalId: NodeJS.Timeout;
+}
+
+const activeCalls = new Map<string, ActiveCall>();
+export const connectedUsers = new Map<string, ConnectedUserInformaiton>();
 export const connectedClients = new Map<string, Socket>();
 
 const sendResponse = (
@@ -65,6 +77,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
 
   // Authentication middleware: now takes the token from headers.
   io.use(async (socket: Socket, next: (err?: any) => void) => {
+    // console.log(socket)
     const token =
       (socket.handshake.auth.token as string) ||
       (socket.handshake.headers.token as string);
@@ -96,6 +109,8 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       email: user.email,
       role: user.role,
     };
+    connectedUsers.set(user._id.toString(), {socketId:socket.id, ...socket.user});  
+  // socket
 
     next();
   });
@@ -110,14 +125,12 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
     });
 
     if (socket.user && socket.user._id) {
-      connectedUsers.set(socket.user._id.toString(), { socketID: socket.id });
       console.log(
         `Registered user ${socket.user._id.toString()} with socket ID: ${socket.id}`
       );
     }
 
     socket.on("userConnected", ({ userId }: { userId: string }) => {
-      connectedUsers.set(userId, { socketID: socket.id });
       console.log(`User ${userId} connected with socket ID: ${socket.id}`);
     });
 
@@ -129,6 +142,67 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       // Optionally, send this data to the teacher or store it
       io.emit("locationData", { userId, latitude, longitude });
     });
+    function connectedUserInfoWithId(to:string){
+ const payloadInfo = connectedUsers.get(to);
+        const socketId = payloadInfo?.socketId;
+        if(!socketId){
+          throw new Error("Socket ID not found for user: " + to);
+        }
+        return {socketId, payloadInfo}
+    }
+
+     socket.on("offer", ({ to, offer ,requestType }:{to:string, offer:any , requestType:'audio-call' | 'video-call'}) => {
+      if(!requestType && (requestType!=='video-call' || requestType!=='audio-call')){
+      throw new Error("Request type is missing or invalid");
+      }
+const {socketId, payloadInfo} = connectedUserInfoWithId(to); 
+
+        console.log("Offer sent to:", to, "From", payloadInfo.name, "Socket ID:", socketId);
+        socket.to(socketId).emit("offer", { from: socket.id, offer, userId: payloadInfo, requestType: requestType });
+         const callId = `${payloadInfo._id}-${to}`;
+      const startTime = Date.now();
+
+  // Create an interval to broadcast duration every second
+      const intervalId = setInterval(() => {
+       const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      socket.emit("call-duration", { to, duration: elapsedSeconds });
+      socket.to(socketId).emit("call-duration", { from: socket.id, duration: elapsedSeconds });
+      }, 1000);
+
+  activeCalls.set(callId, { startTime, intervalId });
+      });
+
+
+      socket.on("offer-answer", ({ to, answer }) => {
+        const {socketId, payloadInfo} = connectedUserInfoWithId(to);  
+        console.log("Offer answered:", to, "Socket ID:", socketId);
+        socket.to(to).emit("offer-answer", { from: socket.id, answer });
+      });
+
+      socket.on("ice-candidate", ({ to, candidate }) => {
+        const {socketId, payloadInfo} = connectedUserInfoWithId(to);  
+        console.log("Ice Candidate Exachange:", to, "Socket ID:", socketId);
+        socket.to(to).emit("ice-candidate", { from: socket.id, candidate });
+      });
+
+      socket.on("end-call", ({ to }) => {
+  const callId = `${socket.id}-${to}`;
+  const reverseCallId = `${to}-${socket.id}`;
+  const callData = activeCalls.get(callId) || activeCalls.get(reverseCallId);
+
+  if (callData) {
+    clearInterval(callData.intervalId);
+    const totalSeconds = Math.floor((Date.now() - callData.startTime) / 1000);
+    console.log(`Call between ${socket.id} and ${to} lasted ${totalSeconds} seconds`);
+
+    // Notify both sides that the call ended
+    socket.emit("call-ended", { to, totalSeconds });
+    socket.to(to).emit("call-ended", { from: socket.id, totalSeconds });
+
+    activeCalls.delete(callId);
+    activeCalls.delete(reverseCallId);
+  }
+});
 
     socket.on("disconnect", () => {
       console.log(
@@ -136,11 +210,17 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       );
 
       for (const [key, value] of connectedUsers.entries()) {
-        if (value.socketID === socket.id) {
+        if (value.socketId === socket.id) {
           connectedUsers.delete(key);
           break;
         }
       }
+        for (const [callId, { intervalId }] of activeCalls) {
+    if (callId.includes(socket.id)) {
+      clearInterval(intervalId);
+      activeCalls.delete(callId);
+    }
+  }
     });
   });
 };
@@ -171,7 +251,7 @@ export const emitNotification = async ({
   const adminIds = admins.map((admin) => admin._id.toString());
 
   if (userMsg && userSocket) {
-    io.to(userSocket.socketID).emit(`notification`, {
+    io.to(userSocket.socketId).emit(`notification`, {
       userId,
       message: userMsg,
     });
@@ -181,7 +261,7 @@ export const emitNotification = async ({
     adminIds.forEach((adminId) => {
       const adminSocket = connectedUsers.get(adminId);
       if (adminSocket) {
-        io.to(adminSocket.socketID).emit(`notification`, {
+        io.to(adminSocket.socketId).emit(`notification`, {
           adminId,
           message: adminMsg,
         });
@@ -258,9 +338,9 @@ export const emitEmergency = async (
 export const emitLocationLatLong = async (data: any) => {
   try {
     const userSocket = connectedUsers.get(data.userId?.toString());
-    console.log(userSocket);
+    // console.log(userSocket); 
     if (userSocket) {
-      io.to(userSocket.socketID).emit("locationUpdated", {
+      io.to(userSocket.socketId).emit("locationUpdated", {
         userId: data.userId,
         latitude: data.latitude,
         longitude: data.longitude,
