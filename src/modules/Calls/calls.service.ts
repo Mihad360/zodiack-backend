@@ -22,13 +22,13 @@ const createCall = async (
     const receiverSocket = connectedUsers.get(receiverId);
     if (receiverSocket) {
       // Notify the receiver about the incoming call
-      io.to(receiverSocket.socketID).emit("incoming_call", {
+      io.to(receiverSocket.socketId).emit("incoming_call", {
         callId: savedCall._id,
         callerId: callerId,
         message: "You have an incoming call",
       });
       console.log(
-        `Notified receiver with socket ID: ${receiverSocket.socketID}`
+        `Notified receiver with socket ID: ${receiverSocket.socketId}`
       );
     }
 
@@ -60,7 +60,7 @@ const acceptCall = async (callId: string) => {
     // Notify the caller that the call was accepted
     const callerSocket = connectedUsers.get(call.caller.toString());
     if (callerSocket) {
-      io.to(callerSocket.socketID).emit("call_accepted", {
+      io.to(callerSocket.socketId).emit("call_accepted", {
         callId,
         message: "The call was accepted by the receiver",
         status: call.status,
@@ -95,7 +95,7 @@ const declineCall = async (callId: string) => {
     // Notify the caller that the call was declined
     const callerSocket = connectedUsers.get(call.caller.toString());
     if (callerSocket) {
-      io.to(callerSocket.socketID).emit("call_declined", {
+      io.to(callerSocket.socketId).emit("call_declined", {
         callId,
         message: "The call was declined by the receiver",
         status: call.status,
