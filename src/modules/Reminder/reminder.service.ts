@@ -88,7 +88,76 @@ const getMyReminders = async (tripId: string, userId: string) => {
   }
 };
 
+const setEmergency = async (payload: IReminder, user: JwtPayload) => {
+  const userId = new Types.ObjectId(user.user);
+
+  // Check if the trip exists
+  const isTripExist = await TripModel.findOne({
+    _id: new Types.ObjectId(payload.trip_id),
+    createdBy: userId,
+  });
+
+  if (!isTripExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Trip not found");
+  }
+
+  // Set trip ID and emergency status
+  payload.trip_id = isTripExist._id;
+  payload.reminder_status = "pending"; // Set status to 'emergency' instead of 'pending'
+
+  // Create the emergency reminder
+  const emergency = await ReminderModel.create(payload);
+
+  if (!emergency) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Failed to create emergency reminder"
+    );
+  }
+
+  // Handle notification creation for participants
+  const participants = isTripExist.participants;
+  if (participants && participants.length > 0) {
+    try {
+      // Create notifications for each participant
+      const notifications = await Promise.all(
+        participants.map(async (participantId) => {
+          const notInfo: INotification = {
+            sender: new Types.ObjectId(isTripExist.createdBy),
+            recipient: participantId,
+            message: `Emergency Alert: ${payload.title} at ${payload.time}\nLocation: ${payload.location}`,
+            type: "emergency", // Set notification type to 'emergency'
+          };
+
+          // Create the notification
+          await NotificationModel.create(notInfo);
+        })
+      );
+
+      // Return the emergency reminder along with success
+      return {
+        success: true,
+        message: "Emergency reminder set and notifications sent",
+        reminder: emergency,
+        notificationsSent: notifications.length,
+      };
+    } catch (error) {
+      throw new AppError(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        "Error sending emergency notifications"
+      );
+    }
+  } else {
+    // If no participants found
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "No participants found in the trip"
+    );
+  }
+};
+
 export const reminderServices = {
   setReminder,
   getMyReminders,
+  setEmergency,
 };

@@ -10,5 +10,10 @@ router.get(
   reminderControllers.getMyReminders
 );
 router.post("/set-reminder", auth("teacher"), reminderControllers.setReminder);
+router.post(
+  "/set-emergency",
+  auth("teacher"),
+  reminderControllers.setEmergency
+);
 
 export const ReminderRoutes = router;

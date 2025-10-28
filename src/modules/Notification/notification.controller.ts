@@ -6,7 +6,11 @@ import { JwtPayload } from "../../interface/global";
 
 const getMyNotifications = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
-  const result = await notificationServices.getMyNotifications(user);
+  // const { filterType } = req.query;
+  const result = await notificationServices.getMyNotifications(
+    user
+    // filterType as string
+  );
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

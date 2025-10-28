@@ -20,7 +20,7 @@ const getMyNotifications = async (user: JwtPayload) => {
   if (user.role === "admin") {
     // Admin: Fetch user login notifications
     notifications = await NotificationModel.find({
-      type: "user_login",
+      $or: [{ type: "user_login" }, { type: "user_registration" }],
     })
       .sort({ createdAt: -1 })
       .populate({ path: "sender", select: "name" });
@@ -36,7 +36,7 @@ const getMyNotifications = async (user: JwtPayload) => {
     // Participant: Fetch trip reminder notifications
     notifications = await NotificationModel.find({
       recipient: userId,
-      type: "trip_reminder",
+      $or: [{ type: "trip_reminder" }, { type: "emergency" }],
     })
       .sort({ createdAt: -1 })
       .populate({ path: "sender", select: "name" });

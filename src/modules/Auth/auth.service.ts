@@ -8,7 +8,7 @@ import { JwtPayload } from "../../interface/global";
 import { createToken, verifyToken } from "../../utils/jwt";
 import config from "../../config";
 import { sendEmail } from "../../utils/sendEmail";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { checkOtp, generateOtp, verificationEmailTemplate } from "./auth.utils";
 import { createAdminNotification } from "../Notification/notification.utils";
 import { INotification } from "../Notification/notification.interface";
@@ -282,38 +282,61 @@ const changePassword = async (
   userId: string | Types.ObjectId,
   payload: { currentPassword: string; newPassword: string }
 ) => {
-  const id = new Types.ObjectId(userId);
-  const user = await UserModel.findById(id).select("+password");
-  if (!user) {
-    throw new AppError(HttpStatus.NOT_FOUND, "User not found");
-  }
-  if (user.isDeleted) {
-    throw new AppError(HttpStatus.FORBIDDEN, "User is blocked");
-  }
-  if (!payload.currentPassword || !payload.newPassword) {
-    throw new AppError(HttpStatus.BAD_REQUEST, "Password is missing");
-  }
-  // 2. Verify current password
-  const isMatch = await bcrypt.compare(payload.currentPassword, user.password);
-  if (!isMatch) {
-    throw new AppError(
-      HttpStatus.UNAUTHORIZED,
-      "Current password is incorrect"
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const id = new Types.ObjectId(userId);
+    const user = await UserModel.findById(id)
+      .select("+password")
+      .session(session);
+
+    if (!user) {
+      throw new AppError(HttpStatus.NOT_FOUND, "User not found");
+    }
+    if (user.isDeleted) {
+      throw new AppError(HttpStatus.FORBIDDEN, "User is blocked");
+    }
+    if (!payload.currentPassword || !payload.newPassword) {
+      throw new AppError(HttpStatus.BAD_REQUEST, "Password is missing");
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(
+      payload.currentPassword,
+      user.password
     );
-  }
-  const newPass = await bcrypt.hash(payload.newPassword, 12);
-  const result = await UserModel.findByIdAndUpdate(
-    user._id,
-    {
-      password: newPass,
-      passwordChangedAt: new Date(),
-    },
-    { new: true }
-  );
-  if (!result) {
-    throw new AppError(HttpStatus.UNAUTHORIZED, "Something went wrong");
-  }
-  if (result) {
+    if (!isMatch) {
+      throw new AppError(
+        HttpStatus.UNAUTHORIZED,
+        "Current password is incorrect"
+      );
+    }
+
+    // Hash new password
+    const newPass = await bcrypt.hash(payload.newPassword, 12);
+
+    // Update user with transaction
+    const result = await UserModel.findByIdAndUpdate(
+      user._id,
+      {
+        password: newPass,
+        passwordChangedAt: new Date(),
+      },
+      { new: true, session }
+    );
+
+    if (!result) {
+      throw new AppError(HttpStatus.UNAUTHORIZED, "Something went wrong");
+    }
+
+    // Commit transaction
+    await session.commitTransaction();
+
+    // Introduce artificial delay (2-3 seconds)
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+
+    // Generate tokens after delay
     const jwtPayload: JwtPayload = {
       user: result._id,
       name: result.name,
@@ -329,12 +352,19 @@ const changePassword = async (
       config.JWT_SECRET_KEY as string,
       config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
     );
+
     const refreshToken = createToken(
       jwtPayload,
       config.jwt_refresh_secret as string,
       config.JWT_REFRESH_EXPIRES_IN_FOR_TEACHER as string
     );
+
     return { accessToken, refreshToken };
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
 };
 

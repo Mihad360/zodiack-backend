@@ -66,12 +66,15 @@ userSchema.statics.isOldTokenValid = async function (
 ) {
   const passwordLastChangedAt = new Date(passwordChangedTime).getTime() / 1000;
   const jwtIssuedAtInSeconds = jwtIssuedTime;
+  console.log(jwtIssuedAtInSeconds);
+  // Check if password change time is later than the JWT issue time
   if (passwordLastChangedAt > jwtIssuedAtInSeconds) {
     console.log("Token is old.");
+    return true; // The token is invalid because password has changed after it was issued.
   } else {
     console.log("Token is valid.");
+    return false; // Token is valid if it was issued before password change.
   }
-  return passwordLastChangedAt > jwtIssuedAtInSeconds;
 };
 
 userSchema.statics.isUserExistByCustomId = async function (email: string) {

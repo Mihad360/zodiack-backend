@@ -164,13 +164,17 @@ main().catch((error) => {
   process.exit(1);
 });
 
-// Gracefully handle unhandled rejections and uncaught exceptions
-process.on("unhandledRejection", (err) => {
-  console.error(" ☠️ Unhandled promise rejection detected:", err);
-  server?.close(() => process.exit(1));
+// Add global error handlers
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  // Don't exit the process, just log
 });
 
 process.on("uncaughtException", (error) => {
-  console.error("☠️ Uncaught exception detected:", error);
-  server?.close(() => process.exit(1));
+  console.error("Uncaught Exception:", error);
+  // Don't exit the process for Socket.IO errors
+});
+
+process.on("uncaughtExceptionMonitor", (error, origin) => {
+  console.error("Uncaught Exception Monitor:", error, "Origin:", origin);
 });

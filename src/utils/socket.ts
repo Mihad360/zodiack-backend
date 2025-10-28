@@ -16,6 +16,7 @@ import { verifyToken } from "./jwt";
 import config from "../config";
 import { LocationModel } from "../modules/Location/location.model";
 import { ILocationTrack } from "../modules/Location/location.interface";
+import { logger } from "../logger/logger";
 
 const app: Application = express();
 
@@ -30,16 +31,17 @@ declare module "socket.io" {
   }
 }
 interface ConnectedUserInformaiton {
-      _id: string;
-      name: string;
-      email: string;
-      role: string;
-       socketId: string 
-    }
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  socketId: string;
+}
 // Initialize the Socket.IO server
 let io: SocketIOServer;
 interface ActiveCall {
   startTime: number;
+  // eslint-disable-next-line no-undef
   intervalId: NodeJS.Timeout;
 }
 
@@ -81,7 +83,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
     const token =
       (socket.handshake.auth.token as string) ||
       (socket.handshake.headers.token as string);
-      
+
     if (!token) {
       return next(
         new ApiError(
@@ -91,28 +93,36 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       );
     }
 
-    const userDetails = verifyToken(token, config.JWT_SECRET_KEY as string);
-    if (!userDetails) {
-      return next(new Error("Authentication error: Invalid token"));
+    try {
+      const userDetails = verifyToken(token, config.JWT_SECRET_KEY as string);
+      if (!userDetails) {
+        return next(new Error("Authentication error: Invalid token"));
+      }
+
+      const user = await UserModel.findById(userDetails.user).select(
+        "_id name email role"
+      );
+      if (!user) {
+        return next(new Error("Authentication error: User not found"));
+      }
+
+      socket.user = {
+        _id: user._id.toString(),
+        name: user.name as string,
+        email: user.email,
+        role: user.role,
+      };
+      connectedUsers.set(user._id.toString(), {
+        socketId: socket.id,
+        ...socket.user,
+      });
+      // socket
+
+      next();
+    } catch (error) {
+      console.error("Socket auth error:", error);
+      return next(new Error("Authentication failed"));
     }
-    const user = await UserModel.findById(userDetails.user).select(
-      "_id name email role"
-    );
-
-    if (!user) {
-      return next(new Error("Authentication error: User not found"));
-    }
-
-    socket.user = {
-      _id: user._id.toString(),
-      name: user.name as string,
-      email: user.email,
-      role: user.role,
-    };
-    connectedUsers.set(user._id.toString(), {socketId:socket.id, ...socket.user});  
-  // socket
-
-    next();
   });
 
   io.on("connection", (socket: Socket) => {
@@ -136,73 +146,125 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
 
     // Listen for location updates (from student)
     socket.on("sendLocation", (data) => {
-      const { latitude, longitude, userId } = data;
-      console.log("Received location from student:", latitude, longitude);
+      const { latitude, longitude, name, userId } = data;
+      console.log(
+        "Received location from student:",
+        userId,
+        name,
+        latitude,
+        longitude
+      );
 
       // Optionally, send this data to the teacher or store it
-      io.emit("locationData", { userId, latitude, longitude });
+      io.emit("locationData", { userId, name, latitude, longitude });
     });
-    function connectedUserInfoWithId(to:string){
- const payloadInfo = connectedUsers.get(to);
-        const socketId = payloadInfo?.socketId;
-        if(!socketId){
-          throw new Error("Socket ID not found for user: " + to);
+    function connectedUserInfoWithId(to: string) {
+      try {
+        console.log(to);
+        const payloadInfo = connectedUsers.get(to);
+        if (!payloadInfo) {
+          throw new Error("User not found: " + to);
         }
-        return {socketId, payloadInfo}
+
+        const socketId = payloadInfo?.socketId;
+        if (!socketId) {
+          console.log("Socket ID not found for user: " + to);
+        }
+
+        return { socketId, payloadInfo };
+      } catch (error) {
+        console.error("Error in connectedUserInfoWithId:", error);
+        throw error; // Re-throw for the caller to handle
+      }
     }
 
-     socket.on("offer", ({ to, offer ,requestType }:{to:string, offer:any , requestType:'audio-call' | 'video-call'}) => {
-      if(!requestType && (requestType!=='video-call' || requestType!=='audio-call')){
-      throw new Error("Request type is missing or invalid");
+    socket.on("offer", ({ to, offer, requestType }) => {
+      try {
+        if (
+          !requestType ||
+          (requestType !== "video-call" && requestType !== "audio-call")
+        ) {
+          // Don't throw, emit an error instead
+          socket.emit("error", {
+            message: "Request type is missing or invalid",
+          });
+          return;
+        }
+
+        const { socketId, payloadInfo } = connectedUserInfoWithId(to);
+        console.log(
+          "Offer sent to:",
+          to,
+          "From",
+          payloadInfo.name,
+          "Socket ID:",
+          socketId
+        );
+        socket.to(socketId).emit("offer", {
+          from: socket.id,
+          offer,
+          userId: payloadInfo,
+          requestType: requestType,
+        });
+        const callId = `${payloadInfo._id}-${to}`;
+        const startTime = Date.now();
+
+        // Create an interval to broadcast duration every second
+        const intervalId = setInterval(() => {
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+          socket.emit("call-duration", { to, duration: elapsedSeconds });
+          socket.to(socketId).emit("call-duration", {
+            from: socket.id,
+            duration: elapsedSeconds,
+          });
+        }, 1000);
+
+        activeCalls.set(callId, { startTime, intervalId });
+      } catch (error) {
+        console.error("Error in offer event:", error);
+        socket.emit("error", { message: "Internal server error" });
       }
-const {socketId, payloadInfo} = connectedUserInfoWithId(to); 
+    });
 
-        console.log("Offer sent to:", to, "From", payloadInfo.name, "Socket ID:", socketId);
-        socket.to(socketId).emit("offer", { from: socket.id, offer, userId: payloadInfo, requestType: requestType });
-         const callId = `${payloadInfo._id}-${to}`;
-      const startTime = Date.now();
+    socket.on("offer-answer", ({ to, answer }) => {
+      const { socketId, payloadInfo } = connectedUserInfoWithId(to);
+      console.log("Offer answered:", to, "Socket ID:", socketId);
+      socket.to(socketId).emit("offer-answer", { from: socket.id, answer });
+    });
 
-  // Create an interval to broadcast duration every second
-      const intervalId = setInterval(() => {
-       const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-      socket.emit("call-duration", { to, duration: elapsedSeconds });
-      socket.to(socketId).emit("call-duration", { from: socket.id, duration: elapsedSeconds });
-      }, 1000);
+    socket.on("ice-candidate", ({ to, candidate }) => {
+      // console.log(to, candidate);
+      const { socketId, payloadInfo } = connectedUserInfoWithId(to);
+      console.log(payloadInfo);
+      // console.log();
+      //  logger.info(`Ice Canditate Exchanged by  ${socket.user?.name}` )
+      logger.info(`Ice Candidate Exachange: from ${socket.user?.name} to ${payloadInfo.name} Socket ID ${socketId}` )
+      socket.broadcast.emit("ice-candidate", { from: socket.id, candidate });
+    });
 
-  activeCalls.set(callId, { startTime, intervalId });
-      });
+    socket.on("end-call", ({ to }) => {
+      const callId = `${socket.id}-${to}`;
+      const reverseCallId = `${to}-${socket.id}`;
+      const callData = 
+        activeCalls.get(callId) || activeCalls.get(reverseCallId);
 
+      if (callData) {
+        clearInterval(callData.intervalId);
+        const totalSeconds = Math.floor(
+          (Date.now() - callData.startTime) / 1000
+        );
+        console.log(
+          `Call between ${socket.id} and ${to} lasted ${totalSeconds} seconds`
+        );
 
-      socket.on("offer-answer", ({ to, answer }) => {
-        const {socketId, payloadInfo} = connectedUserInfoWithId(to);  
-        console.log("Offer answered:", to, "Socket ID:", socketId);
-        socket.to(to).emit("offer-answer", { from: socket.id, answer });
-      });
+        // Notify both sides that the call ended
+        socket.emit("call-ended", { to, totalSeconds });
+        socket.to(to).emit("call-ended", { from: socket.id, totalSeconds });
 
-      socket.on("ice-candidate", ({ to, candidate }) => {
-        const {socketId, payloadInfo} = connectedUserInfoWithId(to);  
-        console.log("Ice Candidate Exachange:", to, "Socket ID:", socketId);
-        socket.to(to).emit("ice-candidate", { from: socket.id, candidate });
-      });
-
-      socket.on("end-call", ({ to }) => {
-  const callId = `${socket.id}-${to}`;
-  const reverseCallId = `${to}-${socket.id}`;
-  const callData = activeCalls.get(callId) || activeCalls.get(reverseCallId);
-
-  if (callData) {
-    clearInterval(callData.intervalId);
-    const totalSeconds = Math.floor((Date.now() - callData.startTime) / 1000);
-    console.log(`Call between ${socket.id} and ${to} lasted ${totalSeconds} seconds`);
-
-    // Notify both sides that the call ended
-    socket.emit("call-ended", { to, totalSeconds });
-    socket.to(to).emit("call-ended", { from: socket.id, totalSeconds });
-
-    activeCalls.delete(callId);
-    activeCalls.delete(reverseCallId);
-  }
-});
+        activeCalls.delete(callId);
+        activeCalls.delete(reverseCallId);
+      }
+    });
 
     socket.on("disconnect", () => {
       console.log(
@@ -215,12 +277,12 @@ const {socketId, payloadInfo} = connectedUserInfoWithId(to);
           break;
         }
       }
-        for (const [callId, { intervalId }] of activeCalls) {
-    if (callId.includes(socket.id)) {
-      clearInterval(intervalId);
-      activeCalls.delete(callId);
-    }
-  }
+      for (const [callId, { intervalId }] of activeCalls) {
+        if (callId.includes(socket.id)) {
+          clearInterval(intervalId);
+          activeCalls.delete(callId);
+        }
+      }
     });
   });
 };
@@ -288,21 +350,27 @@ export const emitMessage = (conversationId: string, messageData: any) => {
   }
   console.log(conversationId, messageData);
   if (io) {
-    io.emit(`newMessage-${conversationId}`, { conversationId, messageData }); // Emit the request to the student
+    io.emit(`new_message-${conversationId}`, { conversationId, messageData }); // Emit the request to the student
   } else {
     console.log(`User ${conversationId} is not connected.`);
   }
 };
 
-export const emitLocationRequest = async (userId: string) => {
+export const emitLocationRequest = async (payload: {
+  userId: string;
+  name?: string;
+}) => {
   // Ensure Socket.IO is initialized
   if (!io) {
     throw new Error("Socket.IO is not initialized");
   }
   if (io) {
-    io.emit(`locationRequest-${userId}`, { userId }); // Emit the request to the student
+    io.emit(`locationRequest-${payload.userId}`, {
+      userId: payload.userId,
+      name: payload.name,
+    });
   } else {
-    console.log(`User ${userId} is not connected.`);
+    console.log(`User ${payload.userId} is not connected.`);
   }
 };
 
@@ -351,7 +419,7 @@ export const emitEmergency = async (
 export const emitLocationLatLong = async (data: any) => {
   try {
     const userSocket = connectedUsers.get(data.userId?.toString());
-    // console.log(userSocket); 
+    // console.log(userSocket);
     if (userSocket) {
       io.to(userSocket.socketId).emit("locationUpdated", {
         userId: data.userId,

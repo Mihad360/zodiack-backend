@@ -66,6 +66,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
         "Is token old?",
         await UserModel.isOldTokenValid(user.passwordChangedAt, iat as number)
       );
+      console.log(token);
       throw new AppError(HttpStatus.UNAUTHORIZED, "You are not authorized");
     }
 

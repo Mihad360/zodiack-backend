@@ -12,6 +12,7 @@ import { AttachmentRoutes } from "../modules/Attachments/attachment.route";
 import { CallRoutes } from "../modules/Calls/calls.route";
 import { LocationRoutes } from "../modules/Location/location.route";
 import { ReminderRoutes } from "../modules/Reminder/reminder.route";
+import { SupportRoutes } from "../modules/support/support.route";
 
 export const routesConfig = [
   { path: "/users", handler: UserRoutes },
@@ -28,4 +29,5 @@ export const routesConfig = [
   { path: "/location", handler: LocationRoutes },
   { path: "/reminders", handler: ReminderRoutes },
   { path: "/calls", handler: CallRoutes },
+  { path: "/support", handler: SupportRoutes },
 ];

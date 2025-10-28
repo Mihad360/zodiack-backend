@@ -16,6 +16,18 @@ const setReminder = catchAsync(async (req, res) => {
   });
 });
 
+const setEmergency = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await reminderServices.setEmergency(req.body, user);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Reminder set successfully",
+    data: result,
+  });
+});
+
 const getMyReminders = catchAsync(async (req, res) => {
   const id = req.params.tripId;
   const user = req.user as JwtPayload;
@@ -33,4 +45,5 @@ const getMyReminders = catchAsync(async (req, res) => {
 export const reminderControllers = {
   setReminder,
   getMyReminders,
+  setEmergency,
 };

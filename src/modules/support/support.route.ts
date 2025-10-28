@@ -1,13 +1,14 @@
 import express from "express";
-
-import { guardRole } from "../../middlewares/roleGuard";
-import { deleteSupport, getSupport, needSupport } from "./support.controller";
+import { supportControllers } from "./support.controller";
+import auth from "../../middlewares/auth";
 
 const router = express.Router();
-router.post("/need", needSupport);
-//router.post("/update", guardRole("primary"), updateCategory);
 
-router.get("/", guardRole("admin"), getSupport);
-router.post("/delete", guardRole("admin"), deleteSupport);
+router.get("/", auth("admin"), supportControllers.getSupports);
+router.post(
+  "/send-support",
+  auth("admin", "participant", "teacher"),
+  supportControllers.sendSupport
+);
 
 export const SupportRoutes = router;

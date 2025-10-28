@@ -1,8 +1,8 @@
-import mongoose, { Document } from "mongoose";
+import { Types } from "mongoose";
+
 export type ISupport = {
-  name: string;
-  email: string;
-  msg: string;
-  createdAt: Date;
+  user: Types.ObjectId;
+  title: string;
+  description: string;
   isDeleted: boolean;
-} & Document;
+};

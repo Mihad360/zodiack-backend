@@ -7,10 +7,16 @@ import { TripModel } from "../Trip/trip.model";
 import { JwtPayload } from "../../interface/global";
 
 const requestLocation = async (id: string | Types.ObjectId) => {
-  const userId = new Types.ObjectId(id);
-  console.log(userId);
+  // If the id is of type Types.ObjectId, convert it to a string
+  const userId = id instanceof Types.ObjectId ? id.toString() : id;
+
+  const userInfo = {
+    userId: userId, // now userId is a string
+    name: "",
+  };
+
   try {
-    await emitLocationRequest(userId.toString());
+    emitLocationRequest(userInfo);
 
     return { message: "Location request sent successfully." };
   } catch (error) {
@@ -28,7 +34,7 @@ const requestMultipleLocation = async (tripId: string | Types.ObjectId) => {
     const trip = await TripModel.findOne({
       _id: tripId,
       status: "planned",
-    });
+    }).populate({ path: "participants", select: "name" });
 
     // If the trip doesn't exist or the status is not 'planned'
     if (!trip) {
@@ -40,7 +46,6 @@ const requestMultipleLocation = async (tripId: string | Types.ObjectId) => {
 
     const { participants } = trip;
 
-    // If there are no participants in the trip
     if (!participants || participants.length === 0) {
       throw new AppError(
         HttpStatus.BAD_REQUEST,
@@ -49,13 +54,19 @@ const requestMultipleLocation = async (tripId: string | Types.ObjectId) => {
     }
 
     // Emit the location request to each participant
-    participants.forEach((participant) => {
-      const participantId = participant._id?.toString(); // Convert ObjectId to string
-      console.log(participantId);
-      if (participantId) {
-        emitLocationRequest(participantId); // Emit location request to participant
+    participants.forEach(
+      (participant: { _id: string | Types.ObjectId; name?: string }) => {
+        const participantId = participant._id?.toString();
+        const userName = participant.name;
+        const userInfo = {
+          userId: participantId,
+          name: userName,
+        };
+        if (participantId) {
+          emitLocationRequest(userInfo); // Emit location request to participant
+        }
       }
-    });
+    );
 
     return {
       message: "Location request sent successfully to all participants.",

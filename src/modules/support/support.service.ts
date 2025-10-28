@@ -1,57 +1,31 @@
-import httpStatus from "http-status";
-import supportModel from "./support.model";
-import ApiError from "../../errors/AppError";
+import HttpStatus from "http-status";
+import { Types } from "mongoose";
+import { JwtPayload } from "../../interface/global";
 import { ISupport } from "./support.interface";
+import { UserModel } from "../user/user.model";
+import AppError from "../../errors/AppError";
+import supportModel from "./support.model";
 
-export const createSupportService = async (
-  name: string | undefined,
-  email: string,
-  msg: string,
-) => {
-  try {
-    const createdSupport = await supportModel.create({
-      name,
-      email,
-      msg,
-    });
-
-    return createdSupport;
-  } catch (error: any) {
-    // console.error(error, "---------->>");
-    const statusCode = error.statusCode || httpStatus.INTERNAL_SERVER_ERROR;
-    const message =
-      error.message || "An error occurred while submitting the support msg.";
-    throw new ApiError(statusCode, message);
+const sendSupport = async (payload: ISupport, user: JwtPayload) => {
+  const userId = new Types.ObjectId(user.user);
+  const isUserExist = await UserModel.findById(userId);
+  if (!isUserExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found");
   }
+  payload.user = new Types.ObjectId(isUserExist._id);
+  const result = await supportModel.create(payload);
+  return result;
 };
 
-export const supportList = async (
-  page: number,
-  limit: number,
-
-  //search?: string,
-) => {
-  const skip = (page - 1) * limit;
-  const filter: any = { isDeleted: false };
-
-  const support = await supportModel
-    .find(filter)
-    .skip(skip)
-    .limit(limit)
-    .sort({ createdAt: -1 }); // Sort by most recent
-
-  const totalSupport = await supportModel.countDocuments(filter);
-  const totalPages = Math.ceil(totalSupport / limit);
-
-  return { support, totalSupport, totalPages };
-};
-
-export const findSupportId = async (id: string): Promise<ISupport | null> => {
-  return supportModel.findById(id);
-};
-
-export const supportDelete = async (id: string): Promise<void> => {
-  await supportModel.findByIdAndUpdate(id, {
-    isDeleted: true,
+const getSupports = async () => {
+  const result = await supportModel.find({ createdAt: -1 }).populate({
+    path: "user",
+    select: "name fatherName motherName email role profileImage",
   });
+  return result;
+};
+
+export const supportServices = {
+  sendSupport,
+  getSupports,
 };
