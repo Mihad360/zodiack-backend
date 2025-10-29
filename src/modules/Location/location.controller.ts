@@ -23,7 +23,7 @@ const requestMultipleLocation = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Location request sent successfully",
+    message: "Multiple location requests sent successfully",
     data: result,
   });
 });
@@ -40,7 +40,7 @@ const emitEmergencyRequest = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Location request sent successfully",
+    message: "Emergency request sent successfully",
     data: result,
   });
 });

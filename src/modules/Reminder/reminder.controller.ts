@@ -23,7 +23,7 @@ const setEmergency = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Reminder set successfully",
+    message: "Emergency Reminder set successfully",
     data: result,
   });
 });

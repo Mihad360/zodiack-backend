@@ -14,5 +14,10 @@ router.put(
   auth("admin", "teacher"),
   notificationControllers.updateNotification
 );
+router.post(
+  "/student-emergency/:tripId",
+  auth("participant"),
+  notificationControllers.studentSetEmergency
+);
 
 export const NotificationRoutes = router;

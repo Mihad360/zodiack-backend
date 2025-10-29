@@ -9,7 +9,6 @@ import { NotificationRoutes } from "../modules/Notification/notification.route";
 import { ConversationRoutes } from "../modules/GroupConversion/conversation.route";
 import { MessageRoutes } from "../modules/Message/message.route";
 import { AttachmentRoutes } from "../modules/Attachments/attachment.route";
-import { CallRoutes } from "../modules/Calls/calls.route";
 import { LocationRoutes } from "../modules/Location/location.route";
 import { ReminderRoutes } from "../modules/Reminder/reminder.route";
 import { SupportRoutes } from "../modules/support/support.route";
@@ -28,6 +27,5 @@ export const routesConfig = [
   { path: "/attachments", handler: AttachmentRoutes },
   { path: "/location", handler: LocationRoutes },
   { path: "/reminders", handler: ReminderRoutes },
-  { path: "/calls", handler: CallRoutes },
   { path: "/support", handler: SupportRoutes },
 ];

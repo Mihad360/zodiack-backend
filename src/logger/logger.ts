@@ -1,8 +1,9 @@
+/* eslint-disable no-undef */
 import { createLogger, format, transports } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import path from "path";
 import fs from "fs";
-import express, { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 
 import { blue, green, red, yellowBright, magenta, yellow } from "colorette";
 

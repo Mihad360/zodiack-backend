@@ -13,6 +13,7 @@ const notificationSchema = new Schema<INotification>(
         "trip_join",
         "trip_reminder",
         "emergency",
+        "student_emergency",
       ],
     },
     message: { type: String, required: true },

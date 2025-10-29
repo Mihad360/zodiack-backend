@@ -8,7 +8,8 @@ export interface INotification {
     | "user_login"
     | "trip_join"
     | "trip_reminder"
-    | "emergency"; // Type of notification
+    | "emergency"
+    | "student_emergency"; // Type of notification
   message: string; // Message content
   isRead?: boolean; // To mark the notification as read or unread
   createdAt?: Date; // Timestamp of when the notification was created

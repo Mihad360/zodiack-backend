@@ -4,6 +4,8 @@ import { JwtPayload } from "../../interface/global";
 import { UserModel } from "../user/user.model";
 import AppError from "../../errors/AppError";
 import { NotificationModel } from "./notification.model";
+import { TripModel } from "../Trip/trip.model";
+import { INotification } from "./notification.interface";
 
 const getMyNotifications = async (user: JwtPayload) => {
   const userId = new Types.ObjectId(user.user);
@@ -28,7 +30,7 @@ const getMyNotifications = async (user: JwtPayload) => {
     // Teacher: Fetch trip join notifications
     notifications = await NotificationModel.find({
       recipient: userId,
-      type: "trip_join",
+      $or: [{ type: "trip_join" }, { type: "student_emergency" }],
     })
       .sort({ createdAt: -1 })
       .populate({ path: "sender", select: "name" });
@@ -67,7 +69,31 @@ const updateNotification = async (id: string) => {
   return notification;
 };
 
+const studentSetEmergency = async (tripId: string, user: JwtPayload) => {
+  const userId = new Types.ObjectId(user.user);
+  const isUserExist = await UserModel.findById(userId);
+  if (!isUserExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found");
+  }
+  const isTripExist = await TripModel.findById(tripId);
+  if (!isTripExist) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Trip not found");
+  }
+  const notInfo: INotification = {
+    sender: new Types.ObjectId(isUserExist._id),
+    recipient: isTripExist.createdBy,
+    message: `Emergency Location Alert from a student: ${isUserExist.name}`,
+    type: "student_emergency",
+  };
+  const result = await NotificationModel.create(notInfo);
+  if (!result) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "Something went wrong");
+  }
+  return result;
+};
+
 export const notificationServices = {
   updateNotification,
   getMyNotifications,
+  studentSetEmergency,
 };

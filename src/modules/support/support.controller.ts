@@ -11,7 +11,7 @@ const sendSupport = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Reminder set successfully",
+    message: "Support request submitted successfully",
     data: result,
   });
 });
@@ -22,7 +22,7 @@ const getSupports = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Reminder set successfully",
+    message: "Support requests retrieved successfully",
     data: result,
   });
 });
