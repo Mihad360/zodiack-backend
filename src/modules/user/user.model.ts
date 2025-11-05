@@ -25,6 +25,7 @@ const userSchema = new Schema<IUser, User>(
     ongoingTripId: { type: Schema.Types.ObjectId, ref: "Trip", default: null },
     licenseExpiresAt: { type: Date, default: null },
     isLicenseAvailable: { type: Boolean, default: false },
+    isEmergencyOngoing: { type: Boolean, default: false },
     passwordChangedAt: { type: Date, default: null },
     conversationId: {
       type: Schema.Types.ObjectId,

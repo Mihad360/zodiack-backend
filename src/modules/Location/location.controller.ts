@@ -45,8 +45,22 @@ const emitEmergencyRequest = catchAsync(async (req, res) => {
   });
 });
 
+const teacherEmergency = catchAsync(async (req, res) => {
+  const id = req.params.tripId;
+  const user = req.user as JwtPayload;
+  const result = await locationServices.teacherEmergency(id, req.body, user);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Emergency request sent successfully",
+    data: result,
+  });
+});
+
 export const locationControllers = {
   requestLocation,
   emitEmergencyRequest,
   requestMultipleLocation,
+  teacherEmergency,
 };

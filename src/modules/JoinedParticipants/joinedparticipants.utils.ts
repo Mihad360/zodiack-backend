@@ -17,15 +17,6 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
 
     let yPosition = margin;
 
-    // const checkPageBreak = (requiredSpace: number) => {
-    //   if (yPosition + requiredSpace > pageHeight - 15) {
-    //     doc.addPage();
-    //     yPosition = margin;
-    //     return true;
-    //   }
-    //   return false;
-    // };
-
     const drawHeaderBox = (
       text: string,
       y: number,
@@ -79,8 +70,6 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
         }),
       ],
       ["Time:", `${tripData.trip_time} - ${tripData.end_time}`],
-      ["Location:", tripData.location],
-      ["Leaving place:", tripData.leaving_place],
       ["Trip Code:", tripData.code],
       ["Status:", tripData.status],
     ];
@@ -99,34 +88,6 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
     yPosition += 5;
     yPosition = drawDivider(yPosition);
 
-    yPosition = drawHeaderBox("PARTICIPANTS", yPosition, [34, 197, 94]);
-    yPosition += 4;
-
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.text("Total: " + tripData.participants.length, margin + 3, yPosition);
-    yPosition += 6;
-
-    doc.setFillColor(248, 250, 252);
-    doc.rect(margin, yPosition, contentWidth, 6, "F");
-    doc.setFont("helvetica", "bold");
-    doc.text("#", margin + 2, yPosition + 4);
-    doc.text("Name", margin + 12, yPosition + 4);
-    doc.text("Role", margin + 70, yPosition + 4);
-    yPosition += 6;
-
-    doc.setFont("helvetica", "normal");
-    tripData.participants.forEach((participant: any, index: number) => {
-      if (index % 2 === 0) {
-        doc.setFillColor(252, 252, 252);
-        doc.rect(margin, yPosition - 1, contentWidth, 4, "F");
-      }
-
-      doc.text((index + 1).toString(), margin + 2, yPosition + 2);
-      doc.text(`${participant.name}`, margin + 12, yPosition + 2);
-      doc.text(participant.role, margin + 70, yPosition + 2);
-      yPosition += 4;
-    });
 
     yPosition += 5;
     yPosition = drawDivider(yPosition);

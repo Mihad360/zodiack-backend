@@ -14,8 +14,8 @@ export const sendEmail = async (to: string, subject: string, html: any) => {
   try {
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
       auth: {
         user: config.Nodemailer_GMAIL,
         pass: config.Nodemailer_GMAIL_PASSWORD,
@@ -57,8 +57,10 @@ export const sendPdfEmail = async (
       // Convert Blob to ArrayBuffer, then to Buffer
       const arrayBuffer = await pdfBuffer.arrayBuffer();
       buffer = Buffer.from(arrayBuffer);
+      console.log(buffer);
     } else if (Buffer.isBuffer(pdfBuffer)) {
       buffer = pdfBuffer;
+      console.log(buffer);
     } else {
       throw new Error("Invalid PDF data type. Expected Blob or Buffer.");
     }
@@ -66,17 +68,17 @@ export const sendPdfEmail = async (
     // Create the transporter using Gmail
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
       auth: {
-        user: process.env.NODEMAILER_GMAIL,
-        pass: process.env.NODEMAILER_GMAIL_PASSWORD,
+        user: config.Nodemailer_GMAIL,
+        pass: config.Nodemailer_GMAIL_PASSWORD,
       },
     });
 
     // Send the email with the PDF as an attachment
     const info = await transporter.sendMail({
-      from: process.env.NODEMAILER_GMAIL,
+      from: config.Nodemailer_GMAIL,
       to,
       subject,
       text: "Please find your trip permission slip attached.",

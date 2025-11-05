@@ -15,6 +15,11 @@ router.post(
   locationControllers.requestMultipleLocation
 );
 router.post(
+  "/:tripId/teacher-emergency",
+  auth("teacher", "participant"),
+  locationControllers.teacherEmergency
+);
+router.post(
   "/:tripId/emergency-loc",
   auth("teacher", "participant"),
   locationControllers.emitEmergencyRequest

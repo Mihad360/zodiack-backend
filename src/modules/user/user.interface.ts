@@ -22,6 +22,7 @@ export interface IUser {
   isLicenseAvailable?: boolean;
   passwordChangedAt?: Date;
   conversationId?: Types.ObjectId;
+  isEmergencyOngoing?: boolean;
   isDeleted?: boolean;
   createdAt?: Date;
   updatedAt?: Date;

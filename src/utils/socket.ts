@@ -158,6 +158,16 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       // Optionally, send this data to the teacher or store it
       io.emit("locationData", { userId, name, latitude, longitude });
     });
+
+    // socket.on("stop-emergency", (data) => {
+    //   const { userId, status } = data;
+    //   console.log(data);
+    //   console.log("Received location from student:", userId, status);
+
+    //   // Optionally, send this data to the teacher or store it
+    //   io.emit("stop-emergency-loc", { userId, status });
+    // });
+
     function connectedUserInfoWithId(to: string) {
       try {
         console.log(to);
@@ -238,14 +248,16 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       console.log(payloadInfo);
       // console.log();
       //  logger.info(`Ice Canditate Exchanged by  ${socket.user?.name}` )
-      logger.info(`Ice Candidate Exachange: from ${socket.user?.name} to ${payloadInfo.name} Socket ID ${socketId}` )
+      logger.info(
+        `Ice Candidate Exachange: from ${socket.user?.name} to ${payloadInfo.name} Socket ID ${socketId}`
+      );
       socket.broadcast.emit("ice-candidate", { from: socket.id, candidate });
     });
 
     socket.on("end-call", ({ to }) => {
       const callId = `${socket.id}-${to}`;
       const reverseCallId = `${to}-${socket.id}`;
-      const callData = 
+      const callData =
         activeCalls.get(callId) || activeCalls.get(reverseCallId);
 
       if (callData) {
@@ -411,6 +423,29 @@ export const emitEmergency = async (
   console.log(userId);
   if (io) {
     io.emit(`emergency-${userId?.toString()}`, { userId, latitude, longitude }); // Emit the request to the student
+  } else {
+    console.log(`User ${userId} is not connected.`);
+  }
+};
+
+export const emitEmergencyFromTeacher = async (
+  userId: string,
+  status: boolean,
+  latitude?: number,
+  longitude?: number
+) => {
+  // Ensure Socket.IO is initialized
+  if (!io) {
+    throw new Error("Socket.IO is not initialized");
+  }
+  console.log(userId);
+  if (io) {
+    io.emit(`teacher_emergency-${userId?.toString()}`, {
+      userId,
+      status,
+      latitude,
+      longitude,
+    }); // Emit the request to the student
   } else {
     console.log(`User ${userId} is not connected.`);
   }

@@ -324,17 +324,15 @@ const requestPermissionSlip = async (
     throw new AppError(HttpStatus.NOT_FOUND, "Trip not found");
   }
   const pdfBuffer = await generateTripPermissionPdf(isTripExist);
+  console.log(pdfBuffer);
   const sendSlip = await sendPdfEmail(
     payload.email,
     "Your Trip Slip",
     pdfBuffer
   );
-
+  console.log(sendSlip);
   if (!sendSlip) {
-    throw new AppError(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      "Failed to send email"
-    );
+    throw new AppError(HttpStatus.BAD_REQUEST, "Failed to send email");
   }
 
   return sendSlip;
