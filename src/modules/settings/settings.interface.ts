@@ -1,5 +1,5 @@
 export interface ISetting {
-  privacyPolicy?: string;
-  termsAndConditions?: string;
-  aboutUs?: string;
+  privacy?: string;
+  terms?: string;
+  about?: string;
 }

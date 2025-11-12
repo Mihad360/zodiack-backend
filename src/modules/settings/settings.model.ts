@@ -3,15 +3,15 @@ import { ISetting } from "./settings.interface";
 
 const SettingsSchema = new Schema<ISetting>(
   {
-    privacyPolicy: {
+    privacy: {
       type: String,
       required: true,
     },
-    termsAndConditions: {
+    terms: {
       type: String,
       required: true,
     },
-    aboutUs: {
+    about: {
       type: String,
       required: true,
     },
