@@ -1,0 +1,7 @@
+node_modules
+.env
+/src/config/vibez-84546-firebase-adminsdk-fbsvc-f1bab122b8.json
+/src/logger/logs
+/logs
+/distsrc/config/*.json
+/src/config/zodiack-26293-firebase-adminsdk-fbsvc-ea6feb3aa4.json

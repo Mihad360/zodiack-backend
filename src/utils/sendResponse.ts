@@ -1,0 +1,15 @@
+import { Response } from "express";
+import { TResponse } from "../interface/global.interface";
+
+const sendResponse = <T>(res: Response, data: TResponse<T>) => {
+  res.status(data.statusCode).json({
+    success: data.success,
+    status: data.statusCode,
+    message: data?.message,
+    pagination: data.pagination,
+    meta: data.meta,
+    data: data.data,
+  });
+};
+
+export default sendResponse;

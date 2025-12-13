@@ -1,0 +1,1296 @@
+{
+	"info": {
+		"_postman_id": "c54d382a-356d-4d26-8458-b60972fc66a6",
+		"name": "Student Trip management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "41251887",
+		"_collection_link": "https://sta444.postman.co/workspace/STA-workspace~150b4b3a-4722-49a7-8a43-1c72171ab98d/collection/41251887-c54d382a-356d-4d26-8458-b60972fc66a6?action=share&source=collection_link&creator=41251887"
+	},
+	"item": [
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "get me",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{teacherToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all user(admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update profile",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{teacherToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "data",
+									"value": "{\n    \"user_name\": \"mihad\",\n    \"address\": \"dhaka, bangladesh\",\n    \"phoneNumber\": \"12345678945\"\n}",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": "/C:/Users/Montasir Mihad/Downloads/Blank diagram (3).png"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/update-profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"update-profile"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "login user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"const bearerToken = `Bearer ${jsonData.data.accessToken}`;\r",
+									"if (jsonData && jsonData.data.accessToken && jsonData.data.role === \"teacher\") {\r",
+									"    pm.collectionVariables.set(\"teacherToken\", bearerToken);\r",
+									"} else {\r",
+									"    pm.collectionVariables.set(\"adminToken\", bearerToken);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"admin@gmail.com\",\r\n  \"password\": \"123456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "forget password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"ahmedmihad962@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/forget-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"forget-password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "verify otp",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"ahmedmihad962@gmail.com\",\r\n    \"otp\": \"133550\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-otp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"verify-otp"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "reset password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"ahmedmihad962@gmail.com\",\r\n    \"newPassword\": \"321456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/reset-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"reset-password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "change password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{teacherToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"currentPassword\": \"321456\",\r\n    \"newPassword\": \"123456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/change-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"change-password"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "create teacher",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// const jsonData = pm.response.json();\r",
+									"\r",
+									"// const bearerToken = `Bearer ${jsonData.data.accessToken}`;\r",
+									"// if (jsonData && jsonData.data.accessToken && jsonData.data.role === \"teacher\") {\r",
+									"//     pm.collectionVariables.set(\"teacherToken\", bearerToken);\r",
+									"// } else {\r",
+									"//     pm.collectionVariables.set(\"adminToken\", bearerToken);\r",
+									"// }\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"user_name\": \"john_doe\",\r\n    \"email\": \"ahmedmihad962@gmail.com\",\r\n    \"password\": \"123456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/create-teacher",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"create-teacher"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get one user",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete user",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Teacher",
+			"item": [
+				{
+					"name": "get My trip students",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{teacherToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/teachers/own-trips",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"teachers",
+								"own-trips"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get trip students",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{teacherToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/teachers/68bd2d6f7f8bec77733dfb89/trip-students",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"teachers",
+								"68bd2d6f7f8bec77733dfb89",
+								"trip-students"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update teacher",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/teachers/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"teachers",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "License plan",
+			"item": [
+				{
+					"name": "create license",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"student\": \"64stu456\",\r\n  \"plan_name\": \"Premium\",\r\n  \"price\": 2000,\r\n  \"plan_expiry\": \"2025-12-31\",\r\n  \"facilities\": [\"chat\", \"tracking\", \"notifications\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/licenses/create-license",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"licenses",
+								"create-license"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get licenses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/licenses/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"licenses",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get one license",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/licenses/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"licenses",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update license",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/licenses/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"licenses",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete license",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/licenses/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"licenses",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Trips",
+			"item": [
+				{
+					"name": "create trips",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{teacherToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"trip_name\": \"Trip to Cox's Bazar\",\r\n    \"trip_date\": \"2025-12-25\",\r\n    \"trip_time\": \"08:00 AM\",\r\n    \"end_time\": \"05:00 PM\",\r\n    \"location\": \"Cox's Bazar, Bangladesh\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/trips/create-trip",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"trips",
+								"create-trip"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get trips/groups",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/trips/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"trips",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get each trip participants(admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/trips/68bd2d6f7f8bec77733dfb89/trip-participants?searchTerm=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"trips",
+								"68bd2d6f7f8bec77733dfb89",
+								"trip-participants"
+							],
+							"query": [
+								{
+									"key": "searchTerm",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get one trip",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/trips/68bd714a26c5f53cb42755fb",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"trips",
+								"68bd714a26c5f53cb42755fb"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update trip",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/trips/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"trips",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete trip",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/trips/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"trips",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Join Participants",
+			"item": [
+				{
+					"name": "create Participant",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"Mihad\",\r\n    \"lastName\": \"Doe\",\r\n    \"role\": \"student\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/participants/create-participant",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"participants",
+								"create-participant"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "join trip by Scan/Code",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"tripId\": \"68bd714a26c5f53cb42755fb\",\r\n    \"code\": \"6762\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/participants/join-trip/68bd70e526c5f53cb42755f2",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"participants",
+								"join-trip",
+								"68bd70e526c5f53cb42755f2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get trips",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/enroll-trips/:tripId/enrollments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"enroll-trips",
+								":tripId",
+								"enrollments"
+							],
+							"variable": [
+								{
+									"key": "tripId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get one enrolled trips",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/enroll-trips/:tripId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"enroll-trips",
+								":tripId"
+							],
+							"variable": [
+								{
+									"key": "tripId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update enrolled trip",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/enroll-trips/:tripId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"enroll-trips",
+								":tripId"
+							],
+							"variable": [
+								{
+									"key": "tripId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete a enrolled trip",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/enroll-trips/:tripId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"enroll-trips",
+								":tripId"
+							],
+							"variable": [
+								{
+									"key": "tripId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Location",
+			"item": [
+				{
+					"name": "add location log",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"latitude\": 23.8103,\r\n  \"longitude\": 90.4125,\r\n  \"accuracy\": 5\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/trips/:tripId/location",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"trips",
+								":tripId",
+								"location"
+							],
+							"variable": [
+								{
+									"key": "tripId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all locations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/trips/:tripId/location",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"trips",
+								":tripId",
+								"location"
+							],
+							"variable": [
+								{
+									"key": "tripId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Conversation & Messages",
+			"item": [
+				{
+					"name": "create conversation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"teacher\": \"64teach111\",\r\n  \"trip_id\": \"64trip123\",\r\n  \"group_type\": \"group\",\r\n  \"group_name\": \"Science Tour Discussion\",\r\n  \"group_email\": \"sci-tour@example.com\",\r\n  \"contact\": \"01711122233\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/conversations/create-conversation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"conversations",
+								"create-conversation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get a conversation",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/conversations/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"conversations",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "send message",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"sender_id\": \"64stu456\",\r\n  \"msg\": \"Hi team, when are we leaving?\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/conversations/:id/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"conversations",
+								":id",
+								"messages"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get all messages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/conversations/:id/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"conversations",
+								":id",
+								"messages"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notification",
+			"item": [
+				{
+					"name": "create notification",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"user_id\": \"64stu456\",\r\n  \"title\": \"Trip Reminder\",\r\n  \"content\": \"Your trip starts tomorrow at 9 AM\",\r\n  \"notification_type\": \"reminder\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/notifications/create-notification",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								"create-notification"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get notifications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get one notification",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "mark notification as read",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/:id/read",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								":id",
+								"read"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete notification",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Settings",
+			"item": [
+				{
+					"name": "upsert the settings",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{adminToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"privacyPolicy\": \"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ...\",\r\n  \"termsAndConditions\": \"By using this website, you agree to the following terms and conditions. Lorem ipsum dolor sit amet, consectetur adipiscing elit. ...\",\r\n  \"aboutUs\": \"We are a team dedicated to providing excellent services and solutions. Lorem ipsum dolor sit amet, consectetur adipiscing elit. ...\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/settings/update-settings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"settings",
+								"update-settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/settings/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"settings",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000/api/v1",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "adminToken",
+			"value": ""
+		},
+		{
+			"key": "teacherToken",
+			"value": ""
+		}
+	]
+}
