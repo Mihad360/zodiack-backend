@@ -76,7 +76,7 @@ const loginUser = async (payload: IAuth) => {
     }
 
     // -------- ADD FCM TOKEN (UNIQUE) --------
-    if (payload.fcmToken) {
+     if (payload.fcmToken) {
       await UserModel.findByIdAndUpdate(
         user._id,
         {
