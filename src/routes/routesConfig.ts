@@ -13,6 +13,7 @@ import { LocationRoutes } from "../modules/Location/location.route";
 import { ReminderRoutes } from "../modules/Reminder/reminder.route";
 import { SupportRoutes } from "../modules/support/support.route";
 import { reviewRoutes } from "../modules/Reviews/review.route";
+import { videoRoutes } from "../modules/Video/video.route";
 
 export const routesConfig = [
   { path: "/users", handler: UserRoutes },
@@ -30,4 +31,5 @@ export const routesConfig = [
   { path: "/reminders", handler: ReminderRoutes },
   { path: "/support", handler: SupportRoutes },
   { path: "/review", handler: reviewRoutes },
+  { path: "/video", handler: videoRoutes },
 ];

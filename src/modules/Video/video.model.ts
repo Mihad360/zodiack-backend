@@ -6,3 +6,4 @@ const videoSchema = new Schema<IVideo>({
 });
 
 export const VideoModel = model<IVideo>("Video", videoSchema);
+
