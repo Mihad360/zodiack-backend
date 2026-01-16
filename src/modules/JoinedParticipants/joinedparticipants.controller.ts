@@ -48,7 +48,6 @@ const joinTripByOnlyCode = catchAsync(async (req, res) => {
 
 const requestPermissionSlip = catchAsync(async (req, res) => {
   const id = req.params.tripId;
-  console.log(id);
   const result = await joinedParticipantsServices.requestPermissionSlip(
     id,
     req.body

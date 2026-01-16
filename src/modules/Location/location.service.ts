@@ -11,6 +11,10 @@ import { TripModel } from "../Trip/trip.model";
 import { JwtPayload } from "../../interface/global";
 import { UserModel } from "../user/user.model";
 
+const getExpiresAt = (minutes = 40): Date => {
+  return new Date(Date.now() + minutes * 60 * 1000);
+};
+
 const requestLocation = async (id: string | Types.ObjectId) => {
   // If the id is of type Types.ObjectId, convert it to a string
   const userId = id instanceof Types.ObjectId ? id.toString() : id;
@@ -18,6 +22,7 @@ const requestLocation = async (id: string | Types.ObjectId) => {
   const userInfo = {
     userId: userId, // now userId is a string
     name: "",
+    expiresAt: getExpiresAt(40), // now + 40 minutes
   };
 
   try {
@@ -66,6 +71,7 @@ const requestMultipleLocation = async (tripId: string | Types.ObjectId) => {
         const userInfo = {
           userId: participantId,
           name: userName,
+          expiresAt: getExpiresAt(40), // now + 40 minutes
         };
         if (participantId) {
           emitLocationRequest(userInfo); // Emit location request to participant
@@ -193,13 +199,9 @@ export const emitEmergencyRequest = async (
   }
 };
 
-
-
 export const locationServices = {
   requestLocation,
   emitEmergencyRequest,
   requestMultipleLocation,
   teacherEmergency,
 };
-
-

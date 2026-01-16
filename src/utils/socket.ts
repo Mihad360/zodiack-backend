@@ -146,17 +146,23 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
 
     // Listen for location updates (from student)
     socket.on("sendLocation", (data) => {
-      const { latitude, longitude, name, userId } = data;
-      console.log(
-        "Received location from student:",
+      const { userId, name, latitude, longitude, expiresAt } = data;
+
+      console.log("Received location:", {
         userId,
         name,
         latitude,
-        longitude
-      );
+        longitude,
+        expiresAt,
+      });
 
-      // Optionally, send this data to the teacher or store it
-      io.emit("locationData", { userId, name, latitude, longitude });
+      io.emit("locationData", {
+        userId,
+        name,
+        latitude,
+        longitude,
+        expiresAt,
+      });
     });
 
     // socket.on("stop-emergency", (data) => {
@@ -371,19 +377,17 @@ export const emitMessage = (conversationId: string, messageData: any) => {
 export const emitLocationRequest = async (payload: {
   userId: string;
   name?: string;
+  expiresAt: Date; // date + time
 }) => {
-  // Ensure Socket.IO is initialized
   if (!io) {
     throw new Error("Socket.IO is not initialized");
   }
-  if (io) {
-    io.emit(`locationRequest-${payload.userId}`, {
-      userId: payload.userId,
-      name: payload.name,
-    });
-  } else {
-    console.log(`User ${payload.userId} is not connected.`);
-  }
+
+  io.emit(`locationRequest-${payload.userId}`, {
+    userId: payload.userId,
+    name: payload.name,
+    expiresAt: payload.expiresAt,
+  });
 };
 
 // Listens for the student's location update and broadcasts it to the teacher or other connected clients

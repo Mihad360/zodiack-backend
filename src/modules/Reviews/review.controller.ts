@@ -64,10 +64,23 @@ const getPricingData = catchAsync(async (req, res) => {
   });
 });
 
+const deleteReview = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const result = await reviewServices.deleteReview(id);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Emergency Reminder set successfully",
+    data: result,
+  });
+});
+
 export const reviewControllers = {
   addReview,
   getReviews,
   addMealsDonateCount,
   getMealsCharity,
   getPricingData,
+  deleteReview,
 };

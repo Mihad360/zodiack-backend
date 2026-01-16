@@ -81,10 +81,20 @@ const getPricingData = async () => {
   return result;
 };
 
+const deleteReview = async (id: string) => {
+  const result = await TestimonialModel.findByIdAndUpdate(
+    id,
+    { isDeleted: true },
+    { new: true }
+  );
+  return result;
+};
+
 export const reviewServices = {
   addReview,
   getReviews,
   addMealsDonateCount,
   getMealsCharity,
   getPricingData,
+  deleteReview,
 };

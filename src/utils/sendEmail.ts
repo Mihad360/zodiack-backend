@@ -78,7 +78,7 @@ export const sendPdfEmail = async (
 
     // Send the email with the PDF as an attachment
     const info = await transporter.sendMail({
-      from: config.Nodemailer_GMAIL,
+      from: "admin@groupmate.com.au",
       to,
       subject,
       text: "Please find your trip permission slip attached.",
