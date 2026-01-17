@@ -17,6 +17,10 @@ import config from "../config";
 import { LocationModel } from "../modules/Location/location.model";
 import { ILocationTrack } from "../modules/Location/location.interface";
 import { logger } from "../logger/logger";
+import {
+  CallUser,
+  sendCallPushNotification,
+} from "./firebase/callNotification";
 
 const app: Application = express();
 
@@ -194,7 +198,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       }
     }
 
-    socket.on("offer", ({ to, offer, requestType }) => {
+    socket.on("offer", async ({ to, offer, requestType }) => {
       try {
         if (
           !requestType ||
@@ -208,6 +212,14 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
         }
 
         const { socketId, payloadInfo } = connectedUserInfoWithId(to);
+        const socketUser: CallUser = {
+          _id: socket.user?._id,
+          name: socket.user?.name,
+          email: socket.user?.email,
+        };
+        // ✅ **NEW: Send push notification to receiver**
+        await sendCallPushNotification(to, socketUser, requestType);
+
         console.log(
           "Offer sent to:",
           to,

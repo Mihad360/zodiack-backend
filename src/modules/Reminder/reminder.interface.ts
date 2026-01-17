@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 // Interface for Reminder
 export interface IReminder {
   title: string;
-  time: string;
+  time: Date;
   notifyTime: string;
   location: string;
   trip_id?: Types.ObjectId;

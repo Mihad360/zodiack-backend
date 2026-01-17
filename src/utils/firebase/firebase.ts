@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import serviceAccount from "../../../config/zodiack-26293-firebase-adminsdk-fbsvc-ce12b28cbe.json";
+import serviceAccount from "../../../config/groupmate-f4a4a-firebase-adminsdk-fbsvc-4f1e9a108f.json";
 
 if (!admin.apps.length) {
   admin.initializeApp({

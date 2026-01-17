@@ -5,7 +5,7 @@ const reminderSchema = new Schema<IReminder>(
   {
     trip_id: { type: Schema.Types.ObjectId, ref: "Trip" },
     title: { type: String, required: true },
-    time: { type: String, required: true },
+    time: { type: Date, required: true },
     notifyTime: { type: String, required: true },
     location: { type: String, required: true }, // Address or name of the location
 
