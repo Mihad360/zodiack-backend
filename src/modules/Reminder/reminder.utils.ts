@@ -113,7 +113,7 @@ export const processReminderNotifications = async () => {
         // Calculate notification time by subtracting notifyTime
         const notificationTime = calculateNotificationTimeFromISO(
           reminderTime,
-          reminder.notifyTime
+          reminder.notifyTime,
         );
 
         console.log(`Reminder: ${reminder.title}`);
@@ -129,12 +129,12 @@ export const processReminderNotifications = async () => {
         }
 
         console.log(
-          `✅ Processing reminder: ${reminder.title} (ID: ${reminder._id})`
+          `✅ Processing reminder: ${reminder.title} (ID: ${reminder._id})`,
         );
 
         // Get trip details
         const trip = await TripModel.findById(reminder.trip_id).select(
-          "createdBy participants"
+          "createdBy participants",
         );
 
         if (!trip) {
@@ -158,7 +158,7 @@ export const processReminderNotifications = async () => {
 
         if (participants.length === 0) {
           console.log(
-            `⚠️  No verified participants found for trip ${trip._id}`
+            `⚠️  No verified participants found for trip ${trip._id}`,
           );
           continue;
         }
@@ -174,7 +174,7 @@ export const processReminderNotifications = async () => {
             };
 
             return createAdminNotification(notInfo);
-          }
+          },
         );
 
         await Promise.all(notificationPromises);
@@ -183,21 +183,21 @@ export const processReminderNotifications = async () => {
         const fcmTokens = participants
           .map((participant: any) => participant.fcmToken)
           .filter(Boolean);
-
+        console.log(fcmTokens);
         // Send push notifications
         if (fcmTokens.length > 0) {
           await sendPushNotifications(
             fcmTokens,
             `Reminder: ${reminder.title}`,
-            `${reminder.notifyTime} before - at ${formatTime(reminderTime)}, ${reminder.location}`
+            `${reminder.notifyTime} before - at ${formatTime(reminderTime)}, ${reminder.location}`,
           );
 
           console.log(
-            `📲 Sent notifications to ${fcmTokens.length} devices for reminder: ${reminder.title}`
+            `📲 Sent notifications to ${fcmTokens.length} devices for reminder: ${reminder.title}`,
           );
         } else {
           console.log(
-            `⚠️  No FCM tokens found for participants of reminder ${reminder._id}`
+            `⚠️  No FCM tokens found for participants of reminder ${reminder._id}`,
           );
         }
 
@@ -222,7 +222,7 @@ export const processReminderNotifications = async () => {
  */
 function calculateNotificationTimeFromISO(
   reminderTime: Date,
-  notifyTime: string
+  notifyTime: string,
 ): Date {
   const time = parseInt(notifyTime);
   const unit = notifyTime.slice(-1); // Last character (m, h, d)

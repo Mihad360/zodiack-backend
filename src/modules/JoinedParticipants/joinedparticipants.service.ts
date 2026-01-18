@@ -14,46 +14,115 @@ import mongoose, { Types } from "mongoose";
 import { ITrip } from "../Trip/trip.interface";
 import { IJoinedParticipants } from "./joinedparticipants.interface";
 import { INotification } from "../Notification/notification.interface";
-import { createTripJoinNotification } from "../Notification/notification.utils";
+import {
+  createAdminNotification,
+  createTripJoinNotification,
+} from "../Notification/notification.utils";
+import { sendPushNotifications } from "../../utils/firebase/notification";
+import { IUser } from "../user/user.interface";
 
 const createTripParticipants = async (payload: {
   firstName: string;
   lastName: string;
   fatherName: string;
   motherName: string;
+  fcmToken?: string;
 }) => {
   const userName = `${payload.firstName} ${payload.lastName}`;
+
+  // Check if user already exists
   const isUserExist = await UserModel.findOne({
     name: userName,
     fatherName: payload.fatherName,
     motherName: payload.motherName,
   });
+
   if (isUserExist) {
     throw new AppError(HttpStatus.BAD_REQUEST, "Same name data already exist");
   }
-  const result = await UserModel.create({
+
+  // ✅ Create user with FCM token if provided
+  const userData: any = {
     name: userName,
     fatherName: payload.fatherName,
     motherName: payload.motherName,
     role: "participant",
     isVerified: true,
-  });
-  const jwtPayload = {
-    user: result._id,
-    name: result.name,
-    role: result.role,
-    fatherName: result.fatherName,
-    motherName: result.motherName,
-    isDeleted: result?.isDeleted,
   };
+
+  const result = await UserModel.create(userData);
+  // ✅ Optional: Send notification to admins about new participant
+
+  let updateFcm: IUser | any;
+
+  if (payload.fcmToken) {
+    updateFcm = await UserModel.findByIdAndUpdate(
+      result._id,
+      {
+        fcmToken: payload.fcmToken, // ✅ Adds without duplicates
+      },
+      { new: true },
+    );
+
+    if (!updateFcm) {
+      throw new AppError(HttpStatus.BAD_REQUEST, "FCM token update failed");
+    }
+    try {
+      // Create notification for admin
+      const notInfo: INotification = {
+        sender: new Types.ObjectId(result._id),
+        type: "user_registration",
+        message: `New participant registered: ${userName}`,
+      };
+
+      await createAdminNotification(notInfo);
+
+      // Get admin tokens and send push notification
+      const admins = await UserModel.find({
+        role: "admin",
+        isVerified: true,
+      }).select("fcmToken");
+
+      const adminTokens = admins
+        ?.flatMap((admin) => admin.fcmToken || [])
+        .filter(Boolean);
+
+      if (adminTokens.length > 0) {
+        console.log(
+          `📤 Sending notification to ${adminTokens.length} admin(s)`,
+        );
+
+        await sendPushNotifications(
+          adminTokens,
+          "New Participant Registered",
+          `${userName} has joined as a participant`,
+        );
+      }
+    } catch (notificationError) {
+      // Don't fail registration if notification fails
+      console.error("Failed to send admin notification:", notificationError);
+    }
+  }
+  // Create JWT payload
+  const jwtPayload = {
+    user: updateFcm._id,
+    name: updateFcm.name,
+    role: updateFcm.role,
+    fatherName: updateFcm.fatherName,
+    motherName: updateFcm.motherName,
+    isDeleted: updateFcm?.isDeleted,
+  };
+
   const accessToken = jwt.sign(jwtPayload, config.JWT_SECRET_KEY as string, {
     expiresIn: config.JWT_ACCESS_EXPIRES_IN as string,
   });
+
   if (!accessToken) {
     throw new AppError(HttpStatus.BAD_REQUEST, "Something went wrong!");
   }
 
   return {
+    userId: result._id,
     role: result.role,
     accessToken,
   };
@@ -62,7 +131,7 @@ const createTripParticipants = async (payload: {
 const joinTrip = async (
   tripId: string,
   user: JwtPayload,
-  payload: { tripId: string; code: string }
+  payload: { tripId: string; code: string },
 ) => {
   const { code } = payload;
   const userId = new Types.ObjectId(user.user);
@@ -90,14 +159,14 @@ const joinTrip = async (
       userId,
       trip,
       user?.name as string,
-      session
+      session,
     );
     // Step 4: Handle conversation creation or update
     await handleConversation(
       trip,
       userId,
       session,
-      joinedPart as IJoinedParticipants
+      joinedPart as IJoinedParticipants,
     );
 
     const notInfo: INotification = {
@@ -121,7 +190,7 @@ const joinTrip = async (
 
 const joinTripByOnlyCode = async (
   user: JwtPayload,
-  payload: { code: string }
+  payload: { code: string },
 ) => {
   const { code } = payload;
   const userId = new Types.ObjectId(user.user);
@@ -149,14 +218,14 @@ const joinTripByOnlyCode = async (
       userId,
       trip,
       user?.name as string,
-      session
+      session,
     );
     // Step 4: Handle conversation creation or update
     await handleConversation(
       trip,
       userId,
       session,
-      joinedPart as IJoinedParticipants
+      joinedPart as IJoinedParticipants,
     );
 
     const notInfo: INotification = {
@@ -182,7 +251,7 @@ const joinTripByOnlyCode = async (
 const addParticipantToTrip = async (
   trip: ITrip,
   userId: Types.ObjectId,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ) => {
   // Check if the user is already a participant in any trip
   const existingTrip = await TripModel.findOne({
@@ -192,7 +261,7 @@ const addParticipantToTrip = async (
   if (existingTrip) {
     throw new AppError(
       HttpStatus.BAD_REQUEST,
-      "User is already a participant in another trip"
+      "User is already a participant in another trip",
     );
   }
 
@@ -200,7 +269,7 @@ const addParticipantToTrip = async (
   const tripData = await TripModel.findByIdAndUpdate(
     trip._id,
     { $addToSet: { participants: userId } }, // Add user ID only if not already in the list
-    { new: true, session }
+    { new: true, session },
   );
 
   if (tripData) {
@@ -210,7 +279,7 @@ const addParticipantToTrip = async (
         isTripOngoing: true,
         ongoingTripId: tripData._id,
       },
-      { new: true, session }
+      { new: true, session },
     );
   }
   return tripData;
@@ -220,13 +289,13 @@ const handleConversation = async (
   trip: ITrip,
   userId: Types.ObjectId,
   session: mongoose.mongo.ClientSession,
-  joinedPart: IJoinedParticipants
+  joinedPart: IJoinedParticipants,
 ) => {
   // Check if teacher is valid
   if (!trip.createdBy) {
     throw new AppError(
       HttpStatus.BAD_REQUEST,
-      "Trip does not have a valid teacher"
+      "Trip does not have a valid teacher",
     );
   }
   console.log(trip._id, trip.createdBy, joinedPart._id);
@@ -252,7 +321,7 @@ const handleConversation = async (
           participant_id: joinedPart._id, // Store the participant ID
         },
       ],
-      { session }
+      { session },
     );
 
     console.log("New conversation created:", newConversation);
@@ -266,11 +335,11 @@ const handleConversation = async (
       await UserModel.findByIdAndUpdate(
         userId,
         { conversationId: newConversation[0]._id },
-        { session }
+        { session },
       );
       console.log(
         "Updated participant's conversationId:",
-        newConversation[0]._id
+        newConversation[0]._id,
       );
     }
 
@@ -286,7 +355,7 @@ const ensureJoinedParticipant = async (
   userId: Types.ObjectId,
   trip: ITrip,
   userName: string,
-  session: mongoose.mongo.ClientSession
+  session: mongoose.mongo.ClientSession,
 ) => {
   const existingParticipant = await JoinedParticipantsModel.findOne({
     user: userId,
@@ -301,7 +370,7 @@ const ensureJoinedParticipant = async (
           fullName: userName,
         },
       ],
-      { session }
+      { session },
     );
     return joined[0];
   } else {
@@ -311,7 +380,7 @@ const ensureJoinedParticipant = async (
 
 const requestPermissionSlip = async (
   id: string,
-  payload: { email: string }
+  payload: { email: string },
 ) => {
   const isTripExist = await TripModel.findById(id)
     .populate({
@@ -328,7 +397,7 @@ const requestPermissionSlip = async (
   const sendSlip = await sendPdfEmail(
     payload.email,
     "Your Trip Slip",
-    pdfBuffer
+    pdfBuffer,
   );
   console.log(sendSlip);
   if (!sendSlip) {

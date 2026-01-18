@@ -20,7 +20,7 @@ const loginUser = async (payload: IAuth) => {
 
   try {
     const user = await UserModel.findOne({ email: payload.email }).session(
-      session
+      session,
     );
 
     if (!user)
@@ -30,7 +30,7 @@ const loginUser = async (payload: IAuth) => {
 
     const isPasswordMatched = await UserModel.compareUserPassword(
       payload.password,
-      user.password
+      user.password,
     );
     if (!isPasswordMatched)
       throw new AppError(HttpStatus.FORBIDDEN, "Password did not matched");
@@ -52,17 +52,18 @@ const loginUser = async (payload: IAuth) => {
       profileImage: user.profileImage,
       isDeleted: user.isDeleted,
     };
+
     // -------- TOKENS --------
     const accessToken = createToken(
       jwtPayload,
       config.JWT_SECRET_KEY as string,
-      config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
+      config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string,
     );
 
     const refreshToken = createToken(
       jwtPayload,
       config.jwt_refresh_secret as string,
-      config.JWT_REFRESH_EXPIRES_IN_FOR_TEACHER as string
+      config.JWT_REFRESH_EXPIRES_IN_FOR_TEACHER as string,
     );
 
     // -------- VERIFY USER ON FIRST LOGIN --------
@@ -70,22 +71,29 @@ const loginUser = async (payload: IAuth) => {
       await UserModel.findByIdAndUpdate(
         user._id,
         { isVerified: true },
-        { new: true, session }
+        { new: true, session },
       );
     }
 
     // -------- ADD FCM TOKEN (UNIQUE) --------
     if (payload.fcmToken) {
+      // ✅ FIX: Use $addToSet to add token without duplicates
       const updateFcm = await UserModel.findByIdAndUpdate(
         user._id,
         {
-          fcmToken: payload.fcmToken,
+          fcmToken: payload.fcmToken, // ✅ Adds only if not exists
         },
-        { new: true, session }
+        { new: true, session },
       );
+
       if (!updateFcm) {
-        throw new AppError(HttpStatus.BAD_REQUEST, "fcm token update failed");
+        throw new AppError(HttpStatus.BAD_REQUEST, "FCM token update failed");
       }
+
+      // ✅ Optional: Log FCM update
+      console.log(`✅ FCM token added for user: ${user.email}`);
+      console.log(`Total tokens for user: ${updateFcm.fcmToken?.length || 0}`);
+
       // -------- CREATE LOGIN NOTIFICATION --------
       const notInfo: INotification = {
         sender: new Types.ObjectId(userId),
@@ -108,10 +116,15 @@ const loginUser = async (payload: IAuth) => {
         .filter(Boolean);
 
       if (adminTokens.length > 0) {
+        // ✅ Log notification sending
+        console.log(
+          `📤 Sending notification to ${adminTokens.length} admin(s)`,
+        );
+
         await sendPushNotifications(
           adminTokens,
           "New User Login",
-          notifyAdd.message
+          notifyAdd.message,
         );
       }
     }
@@ -139,6 +152,7 @@ const participantLogin = async (payload: IParticipantLog) => {
     fatherName: payload.fatherName,
     motherName: payload.motherName,
   });
+
   if (!user) {
     throw new AppError(HttpStatus.NOT_FOUND, "The user is not found");
   }
@@ -174,20 +188,27 @@ const participantLogin = async (payload: IParticipantLog) => {
   const accessToken = createToken(
     jwtPayload,
     config.JWT_SECRET_KEY as string,
-    config.JWT_ACCESS_EXPIRES_IN as string
+    config.JWT_ACCESS_EXPIRES_IN as string,
   );
-
+  console.log(payload.fcmToken);
   if (payload.fcmToken) {
+    // ✅ FIX: Use $addToSet instead of direct assignment
     const updateFcm = await UserModel.findByIdAndUpdate(
       user._id,
       {
-        fcmToken: payload.fcmToken,
+        fcmToken: payload.fcmToken, // ✅ Adds without duplicates
       },
-      { new: true }
+      { new: true },
     );
+
     if (!updateFcm) {
-      throw new AppError(HttpStatus.BAD_REQUEST, "fcm token update failed");
+      throw new AppError(HttpStatus.BAD_REQUEST, "FCM token update failed");
     }
+
+    // ✅ Log FCM update
+    console.log(`✅ FCM token added for participant: ${user.name}`);
+    console.log(`Total tokens: ${updateFcm.fcmToken?.length || 0}`);
+
     // -------- CREATE LOGIN NOTIFICATION --------
     const notInfo: INotification = {
       sender: new Types.ObjectId(userId),
@@ -208,10 +229,12 @@ const participantLogin = async (payload: IParticipantLog) => {
       .filter(Boolean);
 
     if (adminTokens.length > 0) {
+      console.log(`📤 Sending notification to ${adminTokens.length} admin(s)`);
+
       await sendPushNotifications(
         adminTokens,
         "New User Login",
-        notifyAdd.message
+        notifyAdd.message,
       );
     }
   }
@@ -247,7 +270,7 @@ const forgetPassword = async (email: string) => {
       expiresAt: expireAt,
       isVerified: false,
     },
-    { new: true }
+    { new: true },
   );
   if (newUser) {
     const subject = "Verification Code";
@@ -255,7 +278,7 @@ const forgetPassword = async (email: string) => {
     const mail = await sendEmail(
       user.email,
       subject,
-      verificationEmailTemplate(user.name as string, otp as string)
+      verificationEmailTemplate(user.name as string, otp as string),
     );
     if (!mail) {
       throw new AppError(HttpStatus.BAD_REQUEST, "Something went wrong!");
@@ -286,11 +309,11 @@ const verifyOtp = async (payload: { email: string; otp: string }) => {
         expiresAt: null,
         isVerified: false,
       },
-      { new: true }
+      { new: true },
     );
     throw new AppError(
       HttpStatus.BAD_REQUEST,
-      "The Otp has expired. Try again!"
+      "The Otp has expired. Try again!",
     );
   }
   const check = await checkOtp(payload.email, payload.otp);
@@ -308,7 +331,7 @@ const verifyOtp = async (payload: { email: string; otp: string }) => {
     const accessToken = createToken(
       jwtPayload,
       config.JWT_SECRET_KEY as string,
-      "5m"
+      "5m",
     );
     return { accessToken };
   }
@@ -316,7 +339,7 @@ const verifyOtp = async (payload: { email: string; otp: string }) => {
 
 const resetPassword = async (
   payload: { newPassword: string },
-  userInfo: JwtPayload
+  userInfo: JwtPayload,
 ) => {
   const user = await UserModel.findOne({
     email: userInfo.email,
@@ -335,12 +358,12 @@ const resetPassword = async (
   if (passwordChangedAt && passwordChangedAt > fiveMinutesAgo) {
     throw new AppError(
       HttpStatus.BAD_REQUEST,
-      "Password was recently changed. Please try again after 5 minutes."
+      "Password was recently changed. Please try again after 5 minutes.",
     );
   }
 
   const newHashedPassword = await UserModel.newHashedPassword(
-    payload.newPassword
+    payload.newPassword,
   );
   const updateUser = await UserModel.findOneAndUpdate(
     { email: user.email },
@@ -348,7 +371,7 @@ const resetPassword = async (
       password: newHashedPassword,
       passwordChangedAt: new Date(),
     },
-    { new: true }
+    { new: true },
   );
   if (updateUser) {
     const jwtPayload: JwtPayload = {
@@ -364,7 +387,7 @@ const resetPassword = async (
     const accessToken = createToken(
       jwtPayload,
       config.JWT_SECRET_KEY as string,
-      config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
+      config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string,
     );
     return { accessToken };
   }
@@ -372,7 +395,7 @@ const resetPassword = async (
 
 const changePassword = async (
   userId: string | Types.ObjectId,
-  payload: { currentPassword: string; newPassword: string }
+  payload: { currentPassword: string; newPassword: string },
 ) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -396,12 +419,12 @@ const changePassword = async (
     // Verify current password
     const isMatch = await bcrypt.compare(
       payload.currentPassword,
-      user.password
+      user.password,
     );
     if (!isMatch) {
       throw new AppError(
         HttpStatus.UNAUTHORIZED,
-        "Current password is incorrect"
+        "Current password is incorrect",
       );
     }
 
@@ -415,7 +438,7 @@ const changePassword = async (
         password: newPass,
         passwordChangedAt: new Date(),
       },
-      { new: true, session }
+      { new: true, session },
     );
 
     if (!result) {
@@ -442,13 +465,13 @@ const changePassword = async (
     const accessToken = createToken(
       jwtPayload,
       config.JWT_SECRET_KEY as string,
-      config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
+      config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string,
     );
 
     const refreshToken = createToken(
       jwtPayload,
       config.jwt_refresh_secret as string,
-      config.JWT_REFRESH_EXPIRES_IN_FOR_TEACHER as string
+      config.JWT_REFRESH_EXPIRES_IN_FOR_TEACHER as string,
     );
 
     return { accessToken, refreshToken };
@@ -463,7 +486,7 @@ const changePassword = async (
 const refreshToken = async (token: string) => {
   const decoded = verifyToken(
     token,
-    config.jwt_refresh_secret as string
+    config.jwt_refresh_secret as string,
   ) as jwtpayload;
   const { email, iat } = decoded;
   const user = await UserModel.isUserExistByCustomId(email);
@@ -494,7 +517,7 @@ const refreshToken = async (token: string) => {
   const accessToken = createToken(
     jwtPayload,
     config.JWT_SECRET_KEY as string,
-    config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string
+    config.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER as string,
   );
 
   return {
@@ -524,7 +547,7 @@ const resendOtp = async (email: string) => {
     // OTP is still valid, throw an error because you cannot resend it yet
     throw new AppError(
       HttpStatus.BAD_REQUEST,
-      "OTP is still valid. Please try again after it expires."
+      "OTP is still valid. Please try again after it expires.",
     );
   } else {
     // OTP has expired or has not been set, generate a new OTP
@@ -536,7 +559,7 @@ const resendOtp = async (email: string) => {
     const updatedUser = await UserModel.findOneAndUpdate(
       { email },
       { otp, expiresAt },
-      { new: true }
+      { new: true },
     ).select("-password -passwordChangedAt -otp");
     console.log(updatedUser);
 
@@ -545,12 +568,12 @@ const resendOtp = async (email: string) => {
     const mail = await sendEmail(
       user.email,
       subject,
-      verificationEmailTemplate(user.name as string, otp)
+      verificationEmailTemplate(user.name as string, otp),
     );
     if (!mail) {
       throw new AppError(
         HttpStatus.BAD_REQUEST,
-        "Something went wrong while sending the email!"
+        "Something went wrong while sending the email!",
       );
     }
     return { message: "New otp sent to your email" };

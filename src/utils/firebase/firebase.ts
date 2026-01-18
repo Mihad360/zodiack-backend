@@ -7,4 +7,13 @@ if (!admin.apps.length) {
   });
 }
 
+// ✅ LOG BACKEND FIREBASE PROJECT DETAILS
+console.log("==========================================");
+console.log("🔥 BACKEND FIREBASE CONFIG");
+console.log("==========================================");
+console.log("Project ID:", serviceAccount.project_id);
+console.log("Client Email:", serviceAccount.client_email);
+console.log("Private Key ID:", serviceAccount.private_key_id);
+console.log("==========================================\n");
+
 export default admin;
