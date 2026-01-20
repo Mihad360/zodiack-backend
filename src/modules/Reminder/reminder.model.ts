@@ -6,13 +6,15 @@ const reminderSchema = new Schema<IReminder>(
     trip_id: { type: Schema.Types.ObjectId, ref: "Trip" },
     title: { type: String, required: true },
     time: { type: Date, required: true },
-    notifyTime: { type: String, required: true },
-    location: { type: String, required: true }, // Address or name of the location
+    notifyTime: {
+      type: [String],
+      default: [],
+    }, // e.g., ["15m", "30m", "45m", "2h"]
+    location: { type: String, required: true },
 
-    // Geospatial data for location
     coordinates: {
-      lat: { type: Number, required: true }, // Latitude of the location
-      lng: { type: Number, required: true }, // Longitude of the location
+      lat: { type: Number, required: true },
+      lng: { type: Number, required: true },
     },
 
     reminder_status: {
@@ -21,11 +23,17 @@ const reminderSchema = new Schema<IReminder>(
       default: "pending",
     },
 
+    // Track which notifications have been sent
+    sentNotifications: {
+      type: [String],
+      default: [],
+    }, // e.g., ["15m", "30m"] - already sent
+
     isDeleted: { type: Boolean, default: false },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const ReminderModel = model<IReminder>("Reminder", reminderSchema);

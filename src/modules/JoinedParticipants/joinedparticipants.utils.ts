@@ -20,7 +20,7 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
     const drawHeaderBox = (
       text: string,
       y: number,
-      color: [number, number, number]
+      color: [number, number, number],
     ) => {
       doc.setFillColor(color[0], color[1], color[2]);
       doc.rect(margin, y, contentWidth, 8, "F");
@@ -58,20 +58,40 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
 
+    // Format date and time using the ISO dates directly
+    const formattedDate = new Date(tripData.trip_date).toLocaleDateString(
+      "en-US",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      },
+    );
+
+    const formattedStartTime = new Date(tripData.trip_time).toLocaleTimeString(
+      "en-US",
+      {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      },
+    );
+
+    const formattedEndTime = new Date(tripData.end_time).toLocaleTimeString(
+      "en-US",
+      {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      },
+    );
+
     const tripInfo = [
       ["Trip Name:", tripData.trip_name],
-      [
-        "Date:",
-        new Date(tripData.trip_date).toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-      ],
-      ["Time:", `${tripData.trip_time} - ${tripData.end_time}`],
+      ["Date:", formattedDate],
+      ["Time:", `${formattedStartTime} - ${formattedEndTime}`],
       ["Trip Code:", tripData.code],
-      ["Status:", tripData.status],
+      ["Status:", tripData.status.toUpperCase()],
     ];
 
     tripInfo.forEach(([label, value]) => {
@@ -87,7 +107,6 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
 
     yPosition += 5;
     yPosition = drawDivider(yPosition);
-
 
     yPosition += 5;
     yPosition = drawDivider(yPosition);
@@ -118,6 +137,29 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
     yPosition += 8;
     yPosition = drawDivider(yPosition);
 
+    // Add signature section right after creator info
+    yPosition += 8;
+
+    const signatureX = pageWidth - margin - 60;
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("Teacher's Signature:", signatureX, yPosition);
+
+    // Draw signature line
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.3);
+    doc.line(signatureX, yPosition + 10, signatureX + 50, yPosition + 10);
+
+    // Add date line below signature
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text("Date: _______________", signatureX, yPosition + 18);
+
+    yPosition += 25;
+
+    // Generated date at bottom left
     const currentDate = new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -127,8 +169,9 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
     doc.setFontSize(8);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(100, 100, 100);
-    doc.text(`Generated: ${currentDate}`, margin + 3, yPosition);
+    doc.text(`Generated: ${currentDate}`, margin + 3, pageHeight - 10);
 
+    // Page numbers
     const totalPages = doc.getNumberOfPages();
     if (totalPages > 1) {
       for (let i = 1; i <= totalPages; i++) {
@@ -138,8 +181,8 @@ export function generateTripPermissionPdf(tripData: any): Promise<Blob> {
         doc.setTextColor(100, 100, 100);
         doc.text(
           `Page ${i} of ${totalPages}`,
-          pageWidth - margin - 15,
-          pageHeight - 8
+          pageWidth / 2 - 10,
+          pageHeight - 8,
         );
       }
     }

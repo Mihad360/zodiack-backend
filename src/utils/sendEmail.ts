@@ -23,7 +23,7 @@ export const sendEmail = async (to: string, subject: string, html: any) => {
     });
 
     const info = await transporter.sendMail({
-      from: `${config.Nodemailer_GMAIL}`,
+      from: "admin@groupmate.com.au",
       to,
       subject,
       text: "",
@@ -39,7 +39,7 @@ export const sendEmail = async (to: string, subject: string, html: any) => {
 export const sendPdfEmail = async (
   to: string,
   subject: string,
-  pdfBuffer: unknown // This will be a Blob from the PDF generator
+  pdfBuffer: unknown, // This will be a Blob from the PDF generator
 ): Promise<{ success: boolean; message: string }> => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const checkEmail = regex.test(to);
@@ -144,7 +144,7 @@ export const sendContactEmail = async (data: ContactPayload) => {
     `;
 
     const info = await transporter.sendMail({
-      from: config.Nodemailer_GMAIL,
+      from: "admin@groupmate.com.au",
       to: toEmail,
       subject: "New Support/Enquiry Message",
       html: htmlContent,

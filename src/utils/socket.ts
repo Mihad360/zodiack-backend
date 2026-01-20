@@ -17,10 +17,6 @@ import config from "../config";
 import { LocationModel } from "../modules/Location/location.model";
 import { ILocationTrack } from "../modules/Location/location.interface";
 import { logger } from "../logger/logger";
-import {
-  CallUser,
-  sendCallPushNotification,
-} from "./firebase/callNotification";
 
 const app: Application = express();
 
@@ -57,7 +53,7 @@ const sendResponse = (
   statusCode: number,
   status: string,
   message: string,
-  data?: any
+  data?: any,
 ) => ({
   statusCode,
   status,
@@ -92,8 +88,8 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       return next(
         new ApiError(
           httpStatus.UNAUTHORIZED,
-          "Authentication error: Token missing"
-        )
+          "Authentication error: Token missing",
+        ),
       );
     }
 
@@ -104,7 +100,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       }
 
       const user = await UserModel.findById(userDetails.user).select(
-        "_id name email role"
+        "_id name email role",
       );
       if (!user) {
         return next(new Error("Authentication error: User not found"));
@@ -140,7 +136,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
 
     if (socket.user && socket.user._id) {
       console.log(
-        `Registered user ${socket.user._id.toString()} with socket ID: ${socket.id}`
+        `Registered user ${socket.user._id.toString()} with socket ID: ${socket.id}`,
       );
     }
 
@@ -212,13 +208,13 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
         }
 
         const { socketId, payloadInfo } = connectedUserInfoWithId(to);
-        const socketUser: CallUser = {
-          _id: socket.user?._id,
-          name: socket.user?.name,
-          email: socket.user?.email,
-        };
-        // ✅ **NEW: Send push notification to receiver**
-        await sendCallPushNotification(to, socketUser, requestType);
+        // const socketUser: CallUser = {
+        //   _id: socket.user?._id,
+        //   name: socket.user?.name,
+        //   email: socket.user?.email,
+        // };
+        // // ✅ **NEW: Send push notification to receiver**
+        // await sendCallPushNotification(to, socketUser, requestType);
 
         console.log(
           "Offer sent to:",
@@ -226,7 +222,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
           "From",
           payloadInfo.name,
           "Socket ID:",
-          socketId
+          socketId,
         );
         socket.to(socketId).emit("offer", {
           from: socket.id,
@@ -267,7 +263,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       // console.log();
       //  logger.info(`Ice Canditate Exchanged by  ${socket.user?.name}` )
       logger.info(
-        `Ice Candidate Exachange: from ${socket.user?.name} to ${payloadInfo.name} Socket ID ${socketId}`
+        `Ice Candidate Exachange: from ${socket.user?.name} to ${payloadInfo.name} Socket ID ${socketId}`,
       );
       socket.broadcast.emit("ice-candidate", { from: socket.id, candidate });
     });
@@ -281,10 +277,10 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
       if (callData) {
         clearInterval(callData.intervalId);
         const totalSeconds = Math.floor(
-          (Date.now() - callData.startTime) / 1000
+          (Date.now() - callData.startTime) / 1000,
         );
         console.log(
-          `Call between ${socket.id} and ${to} lasted ${totalSeconds} seconds`
+          `Call between ${socket.id} and ${to} lasted ${totalSeconds} seconds`,
         );
 
         // Notify both sides that the call ended
@@ -298,7 +294,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
 
     socket.on("disconnect", () => {
       console.log(
-        `${socket.user?.name} || ${socket.user?.email} || ${socket.user?._id} just disconnected with socket ID: ${socket.id}`
+        `${socket.user?.name} || ${socket.user?.email} || ${socket.user?._id} just disconnected with socket ID: ${socket.id}`,
       );
 
       for (const [key, value] of connectedUsers.entries()) {
@@ -418,7 +414,7 @@ export const emitLocationUpdated = async () => {
       console.log(
         `Received location from student ${userId}:`,
         latitude,
-        longitude
+        longitude,
       );
 
       // Optionally, you can broadcast to the teacher or store this location
@@ -430,7 +426,7 @@ export const emitLocationUpdated = async () => {
 export const emitEmergency = async (
   userId: string,
   latitude: number,
-  longitude: number
+  longitude: number,
 ) => {
   // Ensure Socket.IO is initialized
   if (!io) {
@@ -448,7 +444,7 @@ export const emitEmergencyFromTeacher = async (
   userId: string,
   status: boolean,
   latitude?: number,
-  longitude?: number
+  longitude?: number,
 ) => {
   // Ensure Socket.IO is initialized
   if (!io) {

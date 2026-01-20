@@ -10,7 +10,7 @@ router.get("/", auth("admin", "school"), userControllers.getUsers);
 router.get(
   "/me",
   auth("admin", "teacher", "participant"),
-  userControllers.getMe
+  userControllers.getMe,
 );
 router.patch(
   "/update-profile",
@@ -22,12 +22,17 @@ router.patch(
     }
     next();
   },
-  userControllers.editUserProfile
+  userControllers.editUserProfile,
+);
+router.post(
+  "/call",
+  auth("admin", "teacher", "participant"),
+  userControllers.sendAudioCallNotification,
 );
 router.delete(
   "/:id",
   auth("admin", "school", "teacher"),
-  userControllers.deleteUser
+  userControllers.deleteUser,
 );
 router.delete("/:id", auth("teacher"), teacherControllers.removeParticipant);
 

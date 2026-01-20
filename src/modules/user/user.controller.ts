@@ -87,6 +87,20 @@ const getAllConversationForUser = catchAsync(async (req, res) => {
   });
 });
 
+const sendAudioCallNotification = catchAsync(async (req, res) => {
+  const result = await userServices.sendAudioCallNotification(
+    req.user as JwtPayload,
+    req.body,
+  );
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "User conversations retrieved successfully",
+    data: result,
+  });
+});
+
 export const userControllers = {
   getMe,
   editUserProfile,
@@ -95,4 +109,5 @@ export const userControllers = {
   getAllMessageForUser,
   getAllNotificationForUser,
   getAllConversationForUser,
+  sendAudioCallNotification,
 };

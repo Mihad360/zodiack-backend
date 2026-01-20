@@ -105,13 +105,18 @@ const deleteUser = async (id: string) => {
   return result;
 };
 
-export const sendAudioCallNotification = async (payload: {
-  receiverId: string;
-  callerId: string;
-  callerName: string;
-}) => {
+export const sendAudioCallNotification = async (
+  user: JwtPayload,
+  payload: {
+    receiverId: string;
+  },
+) => {
+  // console.log(payload);
+  const callerId = user.user;
+  const callerName = user.name;
+
   // Validation
-  if (!payload.receiverId || !payload.callerId || !payload.callerName) {
+  if (!payload.receiverId || !callerId || !callerName) {
     throw new AppError(
       HttpStatus.BAD_REQUEST,
       "Missing required fields: receiverId, callerId, callerName",
@@ -131,25 +136,42 @@ export const sendAudioCallNotification = async (payload: {
   const fcmToken = receiver.fcmToken;
 
   if (!fcmToken) {
-    console.log("❌ No FCM tokens found for user:", receiver.name);
+    // console.log("❌ No FCM tokens found for user:", receiver.name);
     throw new AppError(
       HttpStatus.BAD_REQUEST,
       `No FCM tokens found for ${receiver.name}`,
     );
   }
 
-  console.log(`📱 Found ${fcmToken} device(s) for ${receiver.name}`);
+  // console.log(`📱 Found ${fcmToken} device(s) for ${receiver.name}`);
+
+  // ✅ AWAIT the call document creation and get the ID
+  const callDoc = await admin.firestore().collection("calls").add({
+    callerId: callerId,
+    callerName: callerName,
+    receiverId: payload.receiverId,
+    receiverName: receiver.name,
+    status: "ringing",
+    type: "audio",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    startedAt: null,
+    endedAt: null,
+  });
+
+  const callId = callDoc?.id; // ✅ Extract the call ID
+  console.log(`📞 Created call document with ID: ${callId}`);
 
   // Prepare notification message
   const message = {
     notification: {
       title: "Incoming Audio Call",
-      body: `${payload.callerName} is calling...`,
+      body: `${callerName} is calling...`,
     },
     data: {
       type: "audio-call",
-      callerId: payload.callerId,
-      callerName: payload.callerName,
+      callId: callId.toString(), // ✅ Include the call ID in notification data
+      callerId: callerId.toString(),
+      callerName: callerName.toString(),
       timestamp: Date.now().toString(),
     },
     android: {
@@ -159,14 +181,14 @@ export const sendAudioCallNotification = async (payload: {
         sound: "ringtone",
         priority: "max" as const,
         visibility: "public" as const,
-        category: "call",
+        tag: "call",
       },
     },
     apns: {
       payload: {
         aps: {
           sound: "ringtone.mp3",
-          category: "call",
+          category: "call_category",
           "interruption-level": "critical",
         },
       },
@@ -175,7 +197,6 @@ export const sendAudioCallNotification = async (payload: {
   };
 
   try {
-    // ✅ Use send() for single token
     const response = await admin.messaging().send(message);
 
     console.log("✅ Notification sent successfully:", response);
@@ -183,10 +204,17 @@ export const sendAudioCallNotification = async (payload: {
     return {
       success: true,
       messageId: response,
+      callId: callId, // ✅ Return the call ID in response
       receiverName: receiver.name,
     };
   } catch (error: any) {
     console.error("❌ Error sending notification:", error);
+
+    // ✅ Update call document status to failed if notification fails
+    await admin.firestore().collection("calls").doc(callId).update({
+      status: "failed",
+      error: error.message,
+    });
 
     // Handle invalid token
     if (
@@ -194,11 +222,6 @@ export const sendAudioCallNotification = async (payload: {
       error.code === "messaging/registration-token-not-registered"
     ) {
       console.log("🗑️ Removing invalid token for user:", receiver.name);
-
-      // // Clear the invalid token
-      // await UserModel.findByIdAndUpdate(receiverId, {
-      //   $unset: { fcmToken: "" },
-      // });
 
       throw new AppError(
         HttpStatus.BAD_REQUEST,

@@ -13,16 +13,22 @@ const tripSchema = new Schema<ITrip>(
       required: true,
     },
     trip_date: {
-      type: String,
+      type: Date,
       required: true,
     },
     trip_time: {
-      type: String,
+      type: Date,
       required: true,
     },
     end_time: {
-      type: String,
+      type: Date,
       required: true,
+      validate: {
+        validator: function (this: ITrip, value: Date) {
+          return value > this.trip_time;
+        },
+        message: "End time must be after start time",
+      },
     },
     status: {
       type: String,
@@ -37,7 +43,7 @@ const tripSchema = new Schema<ITrip>(
     participants: [
       {
         type: Schema.Types.ObjectId,
-        ref: "User", // only reference User now
+        ref: "User",
         default: [],
       },
     ],
@@ -48,7 +54,7 @@ const tripSchema = new Schema<ITrip>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const TripModel = model<ITrip>("Trip", tripSchema);

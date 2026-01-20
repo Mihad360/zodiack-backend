@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
-dotenv.config({ path: path.join((process.cwd(), ".env")) });
+
+dotenv.config({ path: path.join(process.cwd(), ".env") });
 
 export default {
   PORT: 5000,
@@ -13,8 +14,9 @@ export default {
     process.env.JWT_ACCESS_EXPIRES_IN_FOR_PARTICIPANT,
   JWT_ACCESS_EXPIRES_IN_FOR_TEACHER:
     process.env.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER,
+  // ❗ FIXED: was pointing to ACCESS instead of REFRESH
   JWT_REFRESH_EXPIRES_IN_FOR_TEACHER:
-    process.env.JWT_ACCESS_EXPIRES_IN_FOR_TEACHER,
+    process.env.JWT_REFRESH_EXPIRES_IN_FOR_TEACHER,
   Nodemailer_GMAIL: process.env.Nodemailer_GMAIL,
   Nodemailer_GMAIL_PASSWORD: process.env.Nodemailer_GMAIL_PASSWORD,
   UPLOAD_FOLDER: process.env.UPLOAD_FOLDER,
@@ -23,8 +25,7 @@ export default {
   cloudinary_api_key: process.env.CLOUDINARY_API_KEY,
   cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
   node_env: process.env.NODE_ENV,
-
-  STRIPE_WEBHOOK_ENDPOINT_SECRET: process.env.endpoint_secret,
+  STRIPE_WEBHOOK_ENDPOINT_SECRET: process.env.STRIPE_WEBHOOK_ENDPOINT_SECRET,
   STRIPE_BASE_URL: "https://grassrootz-asifur-rahman.sarv.live/",
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   STRIPE_PUBLISH_KEY: process.env.STRIPE_PUBLISH_KEY,

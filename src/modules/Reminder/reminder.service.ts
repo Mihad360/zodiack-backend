@@ -79,7 +79,6 @@ const getMyReminders = async (tripId: string, userId: string) => {
   if (!isTripExist) {
     throw new AppError(HttpStatus.NOT_FOUND, "Trip not found");
   }
-  console.log(isTripExist);
   if (isTripExist.participants?.includes(id)) {
     const result = await ReminderModel.find({ trip_id: isTripExist._id });
     return result;
@@ -155,6 +154,8 @@ const setEmergency = async (payload: IReminder, user: JwtPayload) => {
     );
   }
 };
+
+
 
 export const reminderServices = {
   setReminder,

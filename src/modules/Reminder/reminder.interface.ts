@@ -1,17 +1,18 @@
 import { Types } from "mongoose";
 
-// Interface for Reminder
 export interface IReminder {
+  trip_id: Types.ObjectId;
   title: string;
   time: Date;
-  notifyTime: string;
+  notifyTime?: string[]; // Changed to array
   location: string;
-  trip_id?: Types.ObjectId;
   coordinates: {
     lat: number;
     lng: number;
   };
-  reminder_status?: "pending" | "completed" | "dismissed";
-  isDeleted?: boolean;
+  reminder_status: "pending" | "completed" | "dismissed";
+  sentNotifications?: string[]; // Track sent notifications
+  isDeleted: boolean;
   createdAt?: Date;
+  updatedAt?: Date;
 }

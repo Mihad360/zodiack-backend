@@ -86,7 +86,7 @@ import { INotification } from "../Notification/notification.interface";
 // };
 
 /**
- * Process reminders and send notifications
+ * Process reminders and send notifications for multiple notify times
  */
 export const processReminderNotifications = async () => {
   try {
@@ -107,104 +107,162 @@ export const processReminderNotifications = async () => {
 
     for (const reminder of reminders) {
       try {
-        // Parse the time field (MongoDB Date - includes date + time)
         const reminderTime = new Date(reminder.time);
+        const now = new Date();
 
-        // Calculate notification time by subtracting notifyTime
-        const notificationTime = calculateNotificationTimeFromISO(
-          reminderTime,
-          reminder.notifyTime,
+        console.log(`\n📋 Checking reminder: ${reminder.title}`);
+        console.log(`  Reminder time: ${reminderTime.toISOString()}`);
+        console.log(`  Current time: ${now.toISOString()}`);
+
+        // Get notifications that haven't been sent yet
+        const sentNotifications = reminder.sentNotifications || [];
+        const pendingNotifications = reminder.notifyTime?.filter(
+          (time) => !sentNotifications.includes(time),
         );
 
-        console.log(`Reminder: ${reminder.title}`);
-        console.log(`  Reminder time: ${reminderTime.toISOString()}`);
-        console.log(`  Notify before: ${reminder.notifyTime}`);
-        console.log(`  Should notify at: ${notificationTime.toISOString()}`);
-        console.log(`  Current time: ${new Date().toISOString()}`);
+        if (!pendingNotifications?.length) {
+          console.log(`  ✅ All notifications sent for: ${reminder.title}`);
 
-        // Check if it's time to send notification
-        if (!shouldSendNotification(notificationTime)) {
-          console.log(`  ⏸️  Not time yet for reminder: ${reminder.title}`);
+          // Mark as completed if reminder time has passed
+          if (now >= reminderTime) {
+            await ReminderModel.findByIdAndUpdate(reminder._id, {
+              reminder_status: "completed",
+            });
+            console.log(`  🏁 Reminder marked as completed`);
+          }
           continue;
         }
 
         console.log(
-          `✅ Processing reminder: ${reminder.title} (ID: ${reminder._id})`,
+          `  Pending notifications: ${pendingNotifications.join(", ")}`,
         );
 
-        // Get trip details
-        const trip = await TripModel.findById(reminder.trip_id).select(
-          "createdBy participants",
-        );
+        // Check each pending notification time
+        let notificationsSent = false;
 
-        if (!trip) {
-          console.error(`❌ Trip not found for reminder ${reminder._id}`);
-          continue;
-        }
+        for (const notifyTime of pendingNotifications) {
+          const notificationTime = calculateNotificationTimeFromISO(
+            reminderTime,
+            notifyTime,
+          );
 
-        const senderId = trip.createdBy;
-        const participantIds = trip.participants || [];
-
-        if (participantIds.length === 0) {
-          console.log(`⚠️  No participants found for trip ${trip._id}`);
-          continue;
-        }
-
-        // Get participant users with FCM tokens
-        const participants = await UserModel.find({
-          _id: { $in: participantIds },
-          isVerified: true,
-        }).select("fcmToken name");
-
-        if (participants.length === 0) {
+          console.log(`  ⏰ Checking ${notifyTime} notification:`);
           console.log(
-            `⚠️  No verified participants found for trip ${trip._id}`,
+            `    Should notify at: ${notificationTime.toISOString()}`,
           );
-          continue;
+
+          // Check if it's time to send this notification
+          if (!shouldSendNotification(notificationTime)) {
+            console.log(`    ⏸️  Not time yet`);
+            continue;
+          }
+
+          console.log(`    ✅ Time to send ${notifyTime} notification!`);
+
+          // Get trip details
+          const trip = await TripModel.findById(reminder.trip_id).select(
+            "createdBy participants",
+          );
+
+          if (!trip) {
+            console.error(`    ❌ Trip not found for reminder ${reminder._id}`);
+            continue;
+          }
+
+          const senderId = trip.createdBy;
+          const participantIds = trip.participants || [];
+
+          if (participantIds.length === 0) {
+            console.log(`    ⚠️  No participants found for trip ${trip._id}`);
+            continue;
+          }
+
+          // Get participant users with FCM tokens
+          const participants = await UserModel.find({
+            _id: { $in: participantIds },
+            isVerified: true,
+          }).select("fcmToken name");
+
+          if (participants.length === 0) {
+            console.log(
+              `    ⚠️  No verified participants found for trip ${trip._id}`,
+            );
+            continue;
+          }
+
+          // Create notifications for each participant
+          const notificationPromises = participants.map(
+            async (participant: any) => {
+              const notInfo: INotification = {
+                sender: new Types.ObjectId(senderId),
+                recipient: participant._id,
+                type: "reminder",
+                message: `Reminder: ${reminder.title} in ${notifyTime} at ${formatTime(reminderTime)} (${reminder.location})`,
+              };
+
+              return createAdminNotification(notInfo);
+            },
+          );
+
+          await Promise.all(notificationPromises);
+
+          // Collect participant FCM tokens
+          const participantTokens = participants
+            .map((p: any) => p.fcmToken)
+            .filter(Boolean);
+
+          // Get caller token
+          const caller = await UserModel.findById(senderId);
+          const callerToken = caller?.fcmToken;
+
+          // Merge all tokens and remove duplicates
+          const allFcmTokens = [
+            ...participantTokens,
+            ...(callerToken ? [callerToken] : []),
+          ];
+          const uniqueTokens = [...new Set(allFcmTokens)];
+
+          if (uniqueTokens.length > 0) {
+            await sendPushNotifications(
+              uniqueTokens,
+              `Reminder: ${reminder.title}`,
+              `Coming up in ${notifyTime} - ${formatTime(reminderTime)}, ${reminder.location}`,
+            );
+
+            console.log(
+              `    📲 Sent ${notifyTime} notifications to ${uniqueTokens.length} devices`,
+            );
+          } else {
+            console.log(`    ⚠️  No FCM tokens found`);
+          }
+
+          // Mark this notification as sent
+          await ReminderModel.findByIdAndUpdate(reminder._id, {
+            $addToSet: { sentNotifications: notifyTime },
+          });
+
+          notificationsSent = true;
         }
 
-        // Create notifications for each participant
-        const notificationPromises = participants.map(
-          async (participant: any) => {
-            const notInfo: INotification = {
-              sender: new Types.ObjectId(senderId),
-              recipient: participant._id,
-              type: "reminder",
-              message: `Reminder: ${reminder.title} at ${formatTime(reminderTime)} (${reminder.location})`,
-            };
-
-            return createAdminNotification(notInfo);
-          },
-        );
-
-        await Promise.all(notificationPromises);
-
-        // Collect FCM tokens for push notifications
-        const fcmTokens = participants
-          .map((participant: any) => participant.fcmToken)
-          .filter(Boolean);
-        console.log(fcmTokens);
-        // Send push notifications
-        if (fcmTokens.length > 0) {
-          await sendPushNotifications(
-            fcmTokens,
-            `Reminder: ${reminder.title}`,
-            `${reminder.notifyTime} before - at ${formatTime(reminderTime)}, ${reminder.location}`,
-          );
-
-          console.log(
-            `📲 Sent notifications to ${fcmTokens.length} devices for reminder: ${reminder.title}`,
-          );
-        } else {
-          console.log(
-            `⚠️  No FCM tokens found for participants of reminder ${reminder._id}`,
-          );
+        if (notificationsSent) {
+          console.log(`  ✅ Processed notifications for: ${reminder.title}`);
         }
 
-        // Mark reminder as completed/notified to avoid resending
-        await ReminderModel.findByIdAndUpdate(reminder._id, {
-          reminder_status: "completed",
-        });
+        // Check if reminder time has passed and all notifications sent
+        const updatedReminder = await ReminderModel.findById(
+          reminder._id,
+        ).lean();
+        if (
+          now >= reminderTime &&
+          updatedReminder &&
+          updatedReminder.sentNotifications?.length ===
+            updatedReminder.notifyTime?.length
+        ) {
+          await ReminderModel.findByIdAndUpdate(reminder._id, {
+            reminder_status: "completed",
+          });
+          console.log(`  🏁 All notifications sent and reminder completed`);
+        }
       } catch (error) {
         console.error(`❌ Error processing reminder ${reminder._id}:`, error);
       }

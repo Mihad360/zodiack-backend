@@ -19,11 +19,6 @@ const updateSettings = async (payload: Partial<ISetting>) => {
 };
 
 const getSettings = async () => {
-  // const tripQuery = new QueryBuilder(SettingsModel.find({}), query).filter();
-
-  // const meta = await tripQuery.countTotal();
-  // const result = await tripQuery.modelQuery;
-  // return { meta, result };
   const result = await SettingsModel.findOne({});
   return result;
 };
